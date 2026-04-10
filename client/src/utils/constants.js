@@ -42,7 +42,28 @@ export const MACRO_COLORS = {
 }
 
 export const AI_PROVIDERS = [
-  { value: 'gemini', label: 'Gemini', description: 'Google Gemini 2.5 Flash' },
-  { value: 'openai', label: 'OpenAI', description: 'GPT-4o' },
-  { value: 'claude', label: 'Claude', description: 'Claude Sonnet 4.6' },
+  {
+    value: 'gemini',
+    label: 'Gemini',
+    description: 'Google Gemini 2.5 Flash',
+    model: 'gemini-2.5-flash-preview-05-20',
+    keyName: 'Google AI Studio key',
+    keySource: 'aistudio.google.com',
+  },
+  {
+    value: 'openai',
+    label: 'OpenAI',
+    description: 'GPT-4o',
+    model: 'gpt-4o',
+    keyName: 'OpenAI Platform key',
+    keySource: 'platform.openai.com/api-keys',
+  },
+  {
+    value: 'claude',
+    label: 'Claude',
+    description: 'Claude Sonnet 4.6',
+    model: 'claude-sonnet-4-6',
+    keyName: 'Anthropic Console key',
+    keySource: 'console.anthropic.com/settings/keys',
+  },
 ]

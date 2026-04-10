@@ -82,17 +82,39 @@ export default function SettingsView() {
 
       <GlassCard className="p-6 space-y-6">
         <div>
-          <h2 className="text-base font-semibold text-slate-200 mb-1">AI Provider</h2>
+          <h2 className="text-base font-semibold text-slate-200 mb-1">AI Features Setup</h2>
           <p className="text-sm text-slate-400 mb-4">
-            Configure API keys for AI features (Quick Add, Photo Meal, Meal Planner, etc.).
-            Keys are stored securely on your server and never sent to the browser.
+            AI features are optional. Configure your API keys below. All AI calls are made
+            server-side — your keys are never exposed to the browser.
           </p>
+
+          {/* Provider info table */}
+          <div className="mb-6 rounded-xl overflow-hidden border border-slate-700">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-slate-800/60 border-b border-slate-700">
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-300 uppercase tracking-wide">Provider</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-300 uppercase tracking-wide">Model</th>
+                  <th className="text-left px-4 py-2.5 text-xs font-semibold text-slate-300 uppercase tracking-wide">Key name</th>
+                </tr>
+              </thead>
+              <tbody>
+                {AI_PROVIDERS.map(({ value, label, model, keyName }, i) => (
+                  <tr key={value} className={i < AI_PROVIDERS.length - 1 ? 'border-b border-slate-700/60' : ''}>
+                    <td className="px-4 py-2.5 text-slate-300 font-medium">{label}</td>
+                    <td className="px-4 py-2.5 text-slate-400 font-mono text-xs">{model}</td>
+                    <td className="px-4 py-2.5 text-slate-400">{keyName}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* Provider selector */}
           <div className="space-y-3 mb-6">
             <label className="block text-sm font-medium text-slate-300">Preferred Provider</label>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              {AI_PROVIDERS.map(({ value, label, description }) => {
+              {AI_PROVIDERS.map(({ value, label, model }) => {
                 const isActive = provider === value
                 const keySet = settings[`${value}_api_key_set`]
                 return (
@@ -112,7 +134,7 @@ export default function SettingsView() {
                         : <Circle className="w-4 h-4 text-slate-600" />
                       }
                     </div>
-                    <span className="text-xs text-slate-500">{description}</span>
+                    <span className="text-xs text-slate-500 font-mono">{model}</span>
                     {keySet && <span className="text-xs text-emerald-500">✓ Key configured</span>}
                   </button>
                 )
@@ -123,14 +145,26 @@ export default function SettingsView() {
 
           {/* API key inputs */}
           <div className="space-y-5">
-            {AI_PROVIDERS.map(({ value, label }) => (
-              <APIKeyInput
-                key={value}
-                label={`${label} API Key`}
-                settingKey={`${value}_api_key`}
-                isSet={!!settings[`${value}_api_key_set`]}
-                onSave={saveSetting}
-              />
+            {AI_PROVIDERS.map(({ value, keyName, keySource }) => (
+              <div key={value}>
+                <APIKeyInput
+                  label={keyName}
+                  settingKey={`${value}_api_key`}
+                  isSet={!!settings[`${value}_api_key_set`]}
+                  onSave={saveSetting}
+                />
+                <p className="mt-1 text-xs text-slate-500">
+                  Get your key at{' '}
+                  <a
+                    href={`https://${keySource}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-slate-400 hover:text-emerald-400 underline underline-offset-2 transition-colors"
+                  >
+                    {keySource}
+                  </a>
+                </p>
+              </div>
             ))}
           </div>
         </div>
@@ -139,7 +173,6 @@ export default function SettingsView() {
           <p className="text-xs text-slate-500">
             API keys are stored in your PostgreSQL database. Keys are never sent to your browser —
             all AI calls are made server-side using your credentials.
-            For production deployments, consider enabling PostgreSQL encryption at rest.
           </p>
         </div>
       </GlassCard>
