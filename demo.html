@@ -1,0 +1,853 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Diet Dashboard — Live Demo</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<style>
+  :root { color-scheme: dark; }
+  * { scrollbar-width: thin; scrollbar-color: #334155 transparent; }
+  *::-webkit-scrollbar { width: 5px; }
+  *::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+  body { background: #0f172a; color: #f1f5f9; font-family: ui-sans-serif, system-ui, sans-serif; margin: 0; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .fade-in { animation: fadeIn 0.25s ease-out; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 0.8s linear infinite; }
+  input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.6); cursor: pointer; }
+</style>
+<script>tailwind.config = { darkMode:'class', theme:{ extend:{ backdropBlur:{ xl:'20px' } } } }</script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ── Inline SVG Icon System ──────────────────────────────────────────────────
+const SvgIcon = ({d,size=16,className='',fill='none',strokeW=2}) =>
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24"
+    fill={fill} stroke="currentColor" strokeWidth={strokeW} strokeLinecap="round" strokeLinejoin="round"
+    className={className} dangerouslySetInnerHTML={{__html:d}}/>;
+
+const PATHS = {
+  Activity:"<polyline points='22 12 18 12 15 21 9 3 6 12 2 12'/>",
+  LayoutDashboard:"<rect width='7' height='9' x='3' y='3' rx='1'/><rect width='7' height='5' x='14' y='3' rx='1'/><rect width='7' height='9' x='14' y='12' rx='1'/><rect width='7' height='5' x='3' y='16' rx='1'/>",
+  BookOpen:"<path d='M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z'/><path d='M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z'/>",
+  Database:"<ellipse cx='12' cy='5' rx='9' ry='3'/><path d='M3 5V19A9 3 0 0 0 21 19V5'/><path d='M3 12A9 3 0 0 0 21 12'/>",
+  BarChart2:"<line x1='18' y1='20' x2='18' y2='10'/><line x1='12' y1='20' x2='12' y2='4'/><line x1='6' y1='20' x2='6' y2='14'/>",
+  Scale:"<path d='m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z'/><path d='m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z'/><path d='M7 21H17'/><path d='M12 3v18'/><path d='M3 7h3a3 3 0 0 0 3-3'/><path d='M18 4a3 3 0 0 0 3 3h-3'/>",
+  User:"<path d='M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2'/><circle cx='12' cy='7' r='4'/>",
+  Cpu:"<rect x='4' y='4' width='16' height='16' rx='2'/><rect x='9' y='9' width='6' height='6'/><path d='M15 2v2M9 2v2M2 15h2M2 9h2M22 15h-2M22 9h-2M15 22v-2M9 22v-2'/>",
+  HardDrive:"<line x1='22' y1='12' x2='2' y2='12'/><path d='M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z'/><line x1='6' y1='16' x2='6.01' y2='16'/><line x1='10' y1='16' x2='10.01' y2='16'/>",
+  Settings:"<path d='M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z'/><circle cx='12' cy='12' r='3'/>",
+  X:"<path d='M18 6 6 18'/><path d='m6 6 12 12'/>",
+  Plus:"<path d='M5 12h14'/><path d='M12 5v14'/>",
+  Sparkles:"<path d='m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z'/><path d='M5 3v4'/><path d='M19 17v4'/><path d='M3 5h4'/><path d='M17 19h4'/>",
+  Camera:"<path d='M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z'/><circle cx='12' cy='13' r='3'/>",
+  Flag:"<path d='M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z'/><line x1='4' x2='4' y1='22' y2='15'/>",
+  GripVertical:"<circle cx='9' cy='12' r='1'/><circle cx='9' cy='5' r='1'/><circle cx='9' cy='19' r='1'/><circle cx='15' cy='12' r='1'/><circle cx='15' cy='5' r='1'/><circle cx='15' cy='19' r='1'/>",
+  Trash2:"<path d='M3 6h18'/><path d='M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6'/><path d='M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2'/><line x1='10' x2='10' y1='11' y2='17'/><line x1='14' x2='14' y1='11' y2='17'/>",
+  Search:"<circle cx='11' cy='11' r='8'/><path d='m21 21-4.3-4.3'/>",
+  Download:"<path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='7 10 12 15 17 10'/><line x1='12' x2='12' y1='15' y2='3'/>",
+  Upload:"<path d='M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'/><polyline points='17 8 12 3 7 8'/><line x1='12' x2='12' y1='3' y2='15'/>",
+  Pencil:"<path d='M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z'/><path d='m15 5 4 4'/>",
+  FileText:"<path d='M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z'/><path d='M14 2v4a2 2 0 0 0 2 2h4'/><path d='M10 9H8'/><path d='M16 13H8'/><path d='M16 17H8'/>",
+  TrendingDown:"<polyline points='22 17 13.5 8.5 8.5 13.5 2 7'/><polyline points='16 17 22 17 22 11'/>",
+  TrendingUp:"<polyline points='22 7 13.5 15.5 8.5 10.5 2 17'/><polyline points='16 7 22 7 22 13'/>",
+  CheckCircle:"<path d='M22 11.08V12a10 10 0 1 1-5.93-9.14'/><path d='m9 11 3 3L22 4'/>",
+  Circle:"<circle cx='12' cy='12' r='10'/>",
+  ChevronLeft:"<path d='m15 18-6-6 6-6'/>",
+  ChevronRight:"<path d='m9 18 6-6-6-6'/>",
+  Calendar:"<path d='M8 2v4'/><path d='M16 2v4'/><rect width='18' height='18' x='3' y='4' rx='2'/><path d='M3 10h18'/>",
+  Menu:"<line x1='4' x2='20' y1='12' y2='12'/><line x1='4' x2='20' y1='6' y2='6'/><line x1='4' x2='20' y1='18' y2='18'/>",
+  Copy:"<rect width='14' height='14' x='8' y='8' rx='2' ry='2'/><path d='M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2'/>",
+};
+const Icons = Object.fromEntries(
+  Object.entries(PATHS).map(([name, d]) => [
+    name,
+    ({className='', size=16}) => <SvgIcon d={d} size={size} className={className}/>
+  ])
+);
+
+// ── SVG Chart Primitives ────────────────────────────────────────────────────
+function SVGDonut({data,size=160}) {
+  const cx=size/2,cy=size/2,OR=size/2-14,IR=size/2-32;
+  const total=data.reduce((s,d)=>s+d.value,0)||1;
+  const toRad=a=>a*Math.PI/180;
+  let angle=-90;
+  const slices=data.map(d=>{const deg=(d.value/total)*356;const s={...d,sa:angle,ea:angle+deg};angle+=deg+1.5;return s;});
+  const arc=(sa,ea,r)=>{const x1=cx+r*Math.cos(toRad(sa)),y1=cy+r*Math.sin(toRad(sa)),x2=cx+r*Math.cos(toRad(ea)),y2=cy+r*Math.sin(toRad(ea));return `M${x1},${y1} A${r},${r} 0 ${ea-sa>180?1:0} 1 ${x2},${y2}`;};
+  return <div>
+    <div className="flex justify-center">
+      <svg width={size} height={size}>
+        {slices.map((s,i)=>{
+          const oa=arc(s.sa,s.ea,OR);
+          const ix1=cx+IR*Math.cos(toRad(s.ea)),iy1=cy+IR*Math.sin(toRad(s.ea));
+          const ix2=cx+IR*Math.cos(toRad(s.sa)),iy2=cy+IR*Math.sin(toRad(s.sa));
+          return <path key={i} d={`${oa} L${ix1},${iy1} A${IR},${IR} 0 ${s.ea-s.sa>180?1:0} 0 ${ix2},${iy2} Z`} fill={s.color} opacity={0.88}/>;
+        })}
+      </svg>
+    </div>
+    <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 mt-2">
+      {data.map((d,i)=><div key={i} className="flex items-center gap-1.5 text-xs text-slate-400"><div className="w-2 h-2 rounded-full" style={{background:d.color}}/>{d.name}: {d.value}g</div>)}
+    </div>
+  </div>;
+}
+
+function SVGBars({data,dataKey,color='#10b981',height=180,showLabel=true}) {
+  const W=320,H=height,P={t:10,r:8,b:28,l:38};
+  const vals=data.map(d=>d[dataKey]),max=Math.max(...vals,1);
+  const cW=W-P.l-P.r,cH=H-P.t-P.b,bW=Math.min(cW/data.length*0.6,34),gap=cW/data.length;
+  const ticks=[0,25,50,75,100];
+  return <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+    {ticks.map(p=>{const y=P.t+cH*(1-p/100);return <g key={p}><line x1={P.l} y1={y} x2={W-P.r} y2={y} stroke="#1e293b" strokeWidth={p===0?1:0.5} strokeDasharray={p>0?"3,3":""}/><text x={P.l-4} y={y+3} textAnchor="end" fill="#475569" fontSize={8}>{Math.round(max*p/100)}</text></g>;})}
+    {data.map((d,i)=>{const x=P.l+gap*(i+0.5)-bW/2,bH=cH*(d[dataKey]/max),y=P.t+cH-bH;return <g key={i}><rect x={x} y={y} width={bW} height={bH} rx={3} fill={typeof color==='function'?color(d,i):color} opacity={0.85}/>{showLabel&&<text x={x+bW/2} y={H-P.b+12} textAnchor="middle" fill="#64748b" fontSize={9}>{d.date||d.name}</text>}</g>;})}
+  </svg>;
+}
+
+function SVGColorBars({data,height=180}) {
+  const W=320,H=height,P={t:14,r:8,b:28,l:38},max=115;
+  const cW=W-P.l-P.r,cH=H-P.t-P.b,bW=Math.min(cW/data.length*0.6,36),gap=cW/data.length;
+  return <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+    {[0,50,100].map(p=>{const y=P.t+cH*(1-p/max);return <g key={p}><line x1={P.l} y1={y} x2={W-P.r} y2={y} stroke={p===100?"#334155":"#1e293b"} strokeWidth={0.5} strokeDasharray={p>0?"3,3":""}/><text x={P.l-4} y={y+3} textAnchor="end" fill="#475569" fontSize={8}>{p}%</text></g>;})}
+    {data.map((d,i)=>{const x=P.l+gap*(i+0.5)-bW/2,pct=Math.min(d.percent,max),bH=cH*(pct/max),y=P.t+cH-bH;return <g key={i}><rect x={x} y={y} width={bW} height={bH} rx={3} fill={d.color} opacity={0.85}/><text x={x+bW/2} y={H-P.b+12} textAnchor="middle" fill="#64748b" fontSize={9}>{d.name}</text><text x={x+bW/2} y={Math.max(y-3,P.t+8)} textAnchor="middle" fill={d.color} fontSize={8} fontWeight="600">{d.percent}%</text></g>;})}
+  </svg>;
+}
+
+function SVGLine({data,lines,height=180,dateKey='date'}) {
+  const W=320,H=height,P={t:10,r:10,b:28,l:40};
+  const allVals=lines.flatMap(l=>data.map(d=>+d[l.key]));
+  const mx=Math.max(...allVals),mn=Math.min(...allVals)*0.97,range=mx-mn||1;
+  const cW=W-P.l-P.r,cH=H-P.t-P.b;
+  const px=i=>P.l+cW*i/(data.length-1||1);
+  const py=v=>P.t+cH*(1-(v-mn)/range);
+  const ticks=5;
+  return <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+    {Array.from({length:ticks},(_,i)=>{const v=mn+range*i/(ticks-1),y=py(v);return <g key={i}><line x1={P.l} y1={y} x2={W-P.r} y2={y} stroke="#1e293b" strokeWidth={0.5} strokeDasharray="3,3"/><text x={P.l-4} y={y+3} textAnchor="end" fill="#475569" fontSize={8}>{Number.isInteger(v)?v:v.toFixed(1)}</text></g>;})}
+    {data.map((d,i)=>{if(i%Math.ceil(data.length/7)!==0&&i!==data.length-1)return null;return <text key={i} x={px(i)} y={H-P.b+11} textAnchor="middle" fill="#64748b" fontSize={9}>{d[dateKey]}</text>;})}
+    {lines.map(l=>{
+      const pts=data.map((d,i)=>`${px(i)},${py(d[l.key])}`).join(' ');
+      return <g key={l.key}><polyline points={pts} fill="none" stroke={l.color} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round"/>
+        {data.map((d,i)=><circle key={i} cx={px(i)} cy={py(d[l.key])} r={3} fill={l.color}/>)}
+      </g>;
+    })}
+    {lines.length>1&&<g transform={`translate(${P.l},${P.t})`}>
+      {lines.map((l,i)=><g key={l.key} transform={`translate(${i*70},0)`}><rect width={8} height={3} y={-1} rx={1} fill={l.color}/><text x={11} y={3} fill="#94a3b8" fontSize={9}>{l.name}</text></g>)}
+    </g>}
+  </svg>;
+}
+
+// ── Mock Data ──────────────────────────────────────────────────────────────
+const MOCK_LOGS = [
+  { id:1, meal_type:'breakfast', food_name:'Oatmeal', quantity:80, calories:290, protein:10, carbs:52, fats:5, calcium:20, iron:3.5, magnesium:55, potassium:280, zinc:1.5, consumed:true },
+  { id:2, meal_type:'breakfast', food_name:'Banana', quantity:120, calories:107, protein:1.3, carbs:27, fats:0.4, calcium:6, iron:0.3, magnesium:32, potassium:422, zinc:0.2, consumed:true },
+  { id:3, meal_type:'lunch', food_name:'Chicken Breast', quantity:200, calories:330, protein:62, carbs:0, fats:7, calcium:20, iron:1.8, magnesium:58, potassium:640, zinc:2.8, consumed:true },
+  { id:4, meal_type:'lunch', food_name:'Brown Rice', quantity:150, calories:218, protein:4.5, carbs:46, fats:1.6, calcium:10, iron:0.5, magnesium:43, potassium:84, zinc:0.9, consumed:true },
+  { id:5, meal_type:'lunch', food_name:'Mixed Salad', quantity:100, calories:25, protein:1.5, carbs:4, fats:0.5, calcium:30, iron:1, magnesium:15, potassium:230, zinc:0.3, consumed:false },
+  { id:6, meal_type:'dinner', food_name:'Salmon Fillet', quantity:180, calories:374, protein:50, carbs:0, fats:18, calcium:28, iron:1.0, magnesium:54, potassium:720, zinc:1.3, consumed:true },
+  { id:7, meal_type:'dinner', food_name:'Sweet Potato', quantity:200, calories:172, protein:3.2, carbs:40, fats:0.2, calcium:56, iron:1.4, magnesium:54, potassium:950, zinc:0.6, consumed:true },
+  { id:8, meal_type:'snacks', food_name:'Greek Yogurt', quantity:200, calories:130, protein:17, carbs:9, fats:3.5, calcium:200, iron:0.2, magnesium:18, potassium:260, zinc:1.1, consumed:true },
+  { id:9, meal_type:'pre-workout', food_name:'Whey Protein Shake', quantity:30, calories:120, protein:25, carbs:3, fats:1.5, calcium:150, iron:0.5, magnesium:30, potassium:180, zinc:1.8, consumed:true },
+];
+
+const MOCK_WEIGHT = [
+  {date:'Mar 1',weight:82.5},{date:'Mar 4',weight:82.1},{date:'Mar 7',weight:81.8},
+  {date:'Mar 10',weight:81.5},{date:'Mar 13',weight:81.2},{date:'Mar 16',weight:80.9},
+  {date:'Mar 19',weight:80.7},{date:'Mar 22',weight:80.4},{date:'Mar 25',weight:80.1},
+];
+
+const MOCK_FOOD_DB = [
+  { id:1, name:'Chicken Breast', brand_name:'Fresh', base_quantity:100, unit:'g', calories:165, protein:31, carbs:0, fats:3.6 },
+  { id:2, name:'Brown Rice', brand_name:'', base_quantity:100, unit:'g', calories:216, protein:4.5, carbs:45, fats:1.8 },
+  { id:3, name:'Oatmeal', brand_name:'Quaker', base_quantity:100, unit:'g', calories:362, protein:12, carbs:65, fats:6.5 },
+  { id:4, name:'Salmon Fillet', brand_name:'Wild-Caught', base_quantity:100, unit:'g', calories:208, protein:28, carbs:0, fats:10 },
+  { id:5, name:'Greek Yogurt', brand_name:'Chobani', base_quantity:100, unit:'g', calories:59, protein:10, carbs:3.6, fats:0.4 },
+  { id:6, name:'Sweet Potato', brand_name:'', base_quantity:100, unit:'g', calories:86, protein:1.6, carbs:20, fats:0.1 },
+  { id:7, name:'Banana', brand_name:'', base_quantity:100, unit:'g', calories:89, protein:1.1, carbs:23, fats:0.3 },
+  { id:8, name:'Whey Protein', brand_name:'Optimum Nutrition', base_quantity:30, unit:'g', calories:120, protein:25, carbs:3, fats:1.5 },
+];
+
+const MOCK_REPORTS = [
+  {date:'Mar 19', calories:1820, protein:142, carbs:185, fats:55},
+  {date:'Mar 20', calories:2150, protein:168, carbs:220, fats:72},
+  {date:'Mar 21', calories:1950, protein:155, carbs:195, fats:60},
+  {date:'Mar 22', calories:2280, protein:175, carbs:240, fats:80},
+  {date:'Mar 23', calories:1780, protein:138, carbs:178, fats:52},
+  {date:'Mar 24', calories:2050, protein:162, carbs:210, fats:68},
+  {date:'Mar 25', calories:1966, protein:174, carbs:181, fats:37},
+];
+
+// ── Utilities ──────────────────────────────────────────────────────────────
+const MEAL_TYPES = ['breakfast','lunch','dinner','snacks','pre-workout','post-workout'];
+const MEAL_LABELS = {breakfast:'Breakfast',lunch:'Lunch',dinner:'Dinner',snacks:'Snacks','pre-workout':'Pre-Workout','post-workout':'Post-Workout'};
+const MEAL_ICONS  = {breakfast:'🌅',lunch:'☀️',dinner:'🌙',snacks:'🍎','pre-workout':'💪','post-workout':'🔄'};
+const RDA = {calcium:1000,iron:18,magnesium:400,potassium:3500,zinc:11};
+
+function calcTotals(logs) {
+  const c = logs.filter(l=>l.consumed);
+  const sum = (k) => +c.reduce((s,l)=>s+(+l[k]||0),0).toFixed(1);
+  return { calories:Math.round(sum('calories')), protein:sum('protein'), carbs:sum('carbs'), fats:sum('fats'),
+           calcium:sum('calcium'), iron:sum('iron'), magnesium:sum('magnesium'), potassium:sum('potassium'), zinc:sum('zinc') };
+}
+
+// ── Shared Components ──────────────────────────────────────────────────────
+function GlassCard({children,className='',onClick}) {
+  return <div onClick={onClick} className={`bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl ${onClick?'cursor-pointer hover:border-slate-600':''} transition-all ${className}`}>{children}</div>;
+}
+
+function GradientButton({children,onClick,disabled,variant='primary',size='md',className=''}) {
+  const v = {primary:'bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-white',
+              ghost:'bg-slate-700/50 hover:bg-slate-600/50 text-slate-200 border border-slate-600',
+              danger:'bg-gradient-to-r from-red-500 to-rose-500 text-white'};
+  const s = {sm:'px-3 py-1.5 text-xs',md:'px-4 py-2 text-sm',lg:'px-6 py-3 text-base'};
+  return <button onClick={onClick} disabled={disabled}
+    className={`${v[variant]||v.primary} ${s[size]||s.md} rounded-xl font-medium transition-all duration-200 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 inline-flex items-center gap-1.5 ${className}`}>
+    {children}
+  </button>;
+}
+
+function Modal({isOpen,onClose,title,children,size='md'}) {
+  if (!isOpen) return null;
+  const sizes = {sm:'max-w-sm',md:'max-w-lg',lg:'max-w-2xl'};
+  return <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose}/>
+    <div className={`relative w-full ${sizes[size]||sizes.md} bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl fade-in overflow-hidden`}>
+      {title && <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+        <h2 className="text-lg font-semibold text-slate-100">{title}</h2>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-200"><Icons.X className="w-5 h-5"/></button>
+      </div>}
+      <div className="overflow-y-auto max-h-[80vh]">{children}</div>
+    </div>
+  </div>;
+}
+
+// ── Sidebar ────────────────────────────────────────────────────────────────
+const NAV = [
+  {id:'dashboard',label:'Dashboard',icon:'LayoutDashboard'},
+  {id:'logger',label:'Daily Logger',icon:'BookOpen'},
+  {id:'fooddb',label:'Food Database',icon:'Database'},
+  {id:'reports',label:'Reports',icon:'BarChart2'},
+  {id:'weight',label:'Weight Log',icon:'Scale'},
+  {id:'profile',label:'Profile',icon:'User'},
+  {id:'planner',label:'Meal Planner',icon:'Cpu'},
+  {id:'data',label:'Data Mgmt',icon:'HardDrive'},
+  {id:'settings',label:'Settings',icon:'Settings'},
+];
+
+function Sidebar({activeView,setActiveView}) {
+  return <div className="flex flex-col w-56 h-full bg-slate-900 border-r border-slate-800 shrink-0">
+    <div className="flex items-center gap-3 px-5 py-5 border-b border-slate-800">
+      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center shrink-0">
+        <Icons.Activity className="w-4 h-4 text-white"/>
+      </div>
+      <div>
+        <div className="text-sm font-bold text-white leading-tight">Diet Dashboard</div>
+        <div className="text-xs text-slate-500">Demo Mode</div>
+      </div>
+    </div>
+    <nav className="flex-1 px-2 py-3 space-y-0.5 overflow-y-auto">
+      {NAV.map(({id,label,icon})=>{
+        const Icon = Icons[icon]||Icons.Circle;
+        const active = activeView===id;
+        return <button key={id} onClick={()=>setActiveView(id)}
+          className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all ${active?'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-400 border border-emerald-500/20':'text-slate-400 hover:text-slate-200 hover:bg-slate-800'}`}>
+          <Icon className={`w-4 h-4 shrink-0 ${active?'text-emerald-400':''}`}/>{label}
+        </button>;
+      })}
+    </nav>
+    <div className="px-3 py-4 border-t border-slate-800">
+      <div className="flex items-center gap-2.5 px-3 py-2">
+        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-emerald-500 to-cyan-500 flex items-center justify-center text-white text-xs font-bold">S</div>
+        <div className="text-xs text-slate-400 truncate">sudar@example.com</div>
+      </div>
+    </div>
+  </div>;
+}
+
+// ── Protein Gauge ─────────────────────────────────────────────────────────
+function ProteinGauge({currentG, weightKg=80}) {
+  const GOAL=1.6, MAX=3.2, size=180;
+  const ratio=currentG/weightKg, percent=Math.min(ratio/MAX,1);
+  const cx=size/2, cy=size/2, r=size/2-20;
+  const toXY=(a,r)=>({x:cx+r*Math.cos(a*Math.PI/180),y:cy+r*Math.sin(a*Math.PI/180)});
+  const arc=(s,e,r)=>{const a=toXY(s,r),b=toXY(e,r);return `M${a.x},${a.y} A${r},${r} 0 ${e-s>180?1:0} 1 ${b.x},${b.y}`;};
+  const sa=-210, ea=30, total=ea-sa, fillEnd=sa+total*percent;
+  const color=ratio<GOAL?'#f59e0b':ratio<MAX?'#10b981':'#06b6d4';
+  return <svg width={size} height={size*0.75} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
+    <path d={arc(sa,ea,r)} fill="none" stroke="#1e293b" strokeWidth={16} strokeLinecap="round"/>
+    {percent>0 && <path d={arc(sa,fillEnd,r)} fill="none" stroke={color} strokeWidth={16} strokeLinecap="round"/>}
+    <text x={cx} y={cy-8} textAnchor="middle" fill={color} fontSize={28} fontWeight="bold">{ratio.toFixed(1)}</text>
+    <text x={cx} y={cy+14} textAnchor="middle" fill="#64748b" fontSize={11}>g/kg body weight</text>
+    <text x={cx} y={cy+30} textAnchor="middle" fill="#475569" fontSize={10}>Goal: {GOAL} g/kg</text>
+  </svg>;
+}
+
+// ── Dashboard View ────────────────────────────────────────────────────────
+function DashboardView() {
+  const totals = calcTotals(MOCK_LOGS);
+  const macroData=[{name:'Protein',value:totals.protein,color:'#10b981'},{name:'Carbs',value:totals.carbs,color:'#06b6d4'},{name:'Fats',value:totals.fats,color:'#f59e0b'}];
+  const rdaData=Object.entries(RDA).map(([k,r])=>({name:k.charAt(0).toUpperCase()+k.slice(1),percent:Math.min(Math.round((totals[k]/r)*100),150),color:{calcium:'#06b6d4',iron:'#f59e0b',magnesium:'#8b5cf6',potassium:'#10b981',zinc:'#ef4444'}[k]}));
+  const GOAL=2200;
+  return <div className="p-5 space-y-5 fade-in">
+    {/* Stats strip */}
+    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      {[{l:'Calories',v:totals.calories,u:'kcal',c:'emerald',s:`of ${GOAL} goal`},{l:'Protein',v:totals.protein,u:'g',c:'cyan'},{l:'Carbs',v:totals.carbs,u:'g',c:'yellow'},{l:'Fats',v:totals.fats,u:'g',c:'orange'},{l:'Meals',v:MOCK_LOGS.length,u:'',c:'slate',s:`${MOCK_LOGS.filter(l=>l.consumed).length} consumed`}].map(({l,v,u,c,s})=>(
+        <GlassCard key={l} className="p-4">
+          <div className="text-xs text-slate-400 mb-1">{l}</div>
+          <div className={`text-2xl font-bold text-${c}-400`}>{v}<span className="text-xs font-normal ml-0.5 text-slate-500">{u}</span></div>
+          {s&&<div className="text-xs text-slate-600 mt-0.5">{s}</div>}
+        </GlassCard>
+      ))}
+    </div>
+
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      {/* Left */}
+      <div className="space-y-5">
+        <GlassCard className="p-5">
+          <div className="text-sm font-semibold text-slate-300 mb-3">Protein Intake</div>
+          <div className="flex justify-center"><ProteinGauge currentG={totals.protein} weightKg={80}/></div>
+        </GlassCard>
+        <GlassCard className="p-5">
+          <div className="text-sm font-semibold text-slate-300 mb-2">Macro Distribution</div>
+          <SVGDonut data={macroData} size={160}/>
+        </GlassCard>
+      </div>
+
+      {/* Middle */}
+      <div className="space-y-5">
+        <GlassCard className="p-5">
+          <div className="text-sm font-semibold text-slate-300 mb-3">Micronutrients (% RDA)</div>
+          <SVGColorBars data={rdaData} height={180}/>
+        </GlassCard>
+        <GlassCard className="p-5">
+          <div className="text-sm font-semibold text-slate-300 mb-3">Weight (last 9 days)</div>
+          <SVGLine data={MOCK_WEIGHT} lines={[{key:'weight',color:'#10b981',name:'Weight'}]} height={150}/>
+        </GlassCard>
+      </div>
+
+      {/* Right — mini calendar */}
+      <div className="space-y-5">
+        <GlassCard className="p-5">
+          <div className="text-sm font-semibold text-slate-300 mb-3">Activity — March 2026</div>
+          <MiniCalendar/>
+        </GlassCard>
+        <GlassCard className="p-5">
+          <div className="text-sm font-semibold text-slate-300 mb-3">Today at a Glance</div>
+          <div className="space-y-2 text-xs">
+            {['breakfast','lunch','dinner','snacks','pre-workout'].map(type=>{
+              const items=MOCK_LOGS.filter(l=>l.meal_type===type);
+              if(!items.length) return null;
+              const cal=items.filter(i=>i.consumed).reduce((s,l)=>s+(+l.calories),0);
+              return <div key={type} className="flex items-center justify-between py-1.5 border-b border-slate-700/50 last:border-0">
+                <span className="text-slate-400">{MEAL_ICONS[type]} {MEAL_LABELS[type]}</span>
+                <span className="text-emerald-400 font-medium">{Math.round(cal)} kcal</span>
+              </div>;
+            })}
+          </div>
+        </GlassCard>
+      </div>
+    </div>
+  </div>;
+}
+
+function MiniCalendar() {
+  const DAYS=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  const [sel,setSel]=useState('2026-03-25');
+  const daysInMarch=31, startOffset=0; // March 2026 starts on Sunday
+  const hasData=new Set(['2026-03-18','2026-03-19','2026-03-20','2026-03-21','2026-03-22','2026-03-23','2026-03-24','2026-03-25']);
+  const cheat=new Set(['2026-03-21']);
+  const cells=[...Array(startOffset).fill(null),...Array(daysInMarch).fill(0).map((_,i)=>`2026-03-${String(i+1).padStart(2,'0')}`)];
+  return <div>
+    <div className="grid grid-cols-7 gap-0.5 text-center mb-1">
+      {DAYS.map(d=><div key={d} className="text-xs text-slate-600 py-0.5">{d}</div>)}
+      {cells.map((date,i)=>date
+        ? <button key={i} onClick={()=>setSel(date)} className={`aspect-square flex items-center justify-center text-xs rounded-md transition-all ${sel===date?'ring-2 ring-emerald-500 ring-offset-1 ring-offset-slate-800 bg-emerald-900/30 text-emerald-300':cheat.has(date)?'ring-1 ring-orange-500/60 text-slate-400 hover:bg-slate-700':hasData.has(date)?'bg-emerald-900/40 text-slate-300 hover:bg-emerald-800/40':'text-slate-600 hover:bg-slate-700'}`}>
+            {parseInt(date.split('-')[2])}
+          </button>
+        : <div key={i}/>
+      )}
+    </div>
+    <div className="flex gap-3 mt-2 text-xs text-slate-600">
+      <span><span className="inline-block w-2.5 h-2.5 rounded bg-emerald-900/60 mr-1"></span>Logged</span>
+      <span><span className="inline-block w-2.5 h-2.5 rounded ring-1 ring-orange-500/60 mr-1"></span>Cheat</span>
+    </div>
+  </div>;
+}
+
+// ── Daily Logger View ─────────────────────────────────────────────────────
+function LoggerView() {
+  const [logs,setLogs]=useState(MOCK_LOGS);
+  const [addModal,setAddModal]=useState({open:false,mealType:'breakfast'});
+  const [aiModal,setAiModal]=useState(false);
+  const [aiText,setAiText]=useState('');
+  const [aiLoading,setAiLoading]=useState(false);
+  const [aiResult,setAiResult]=useState(null);
+
+  const total=logs.filter(l=>l.consumed).reduce((s,l)=>s+(+l.calories),0);
+
+  const toggleConsumed=(id)=>setLogs(prev=>prev.map(l=>l.id===id?{...l,consumed:!l.consumed}:l));
+  const deleteLog=(id)=>setLogs(prev=>prev.filter(l=>l.id!==id));
+
+  const mockAIParse=()=>{
+    setAiLoading(true);
+    setTimeout(()=>{
+      setAiResult([
+        {foodName:'Almonds',quantity:30,unit:'g',calories:174,protein:6,carbs:6,fats:15,mealType:'snacks'},
+        {foodName:'Apple',quantity:182,unit:'g',calories:95,protein:0.5,carbs:25,fats:0.3,mealType:'snacks'},
+      ]);
+      setAiLoading(false);
+    },1800);
+  };
+
+  return <div className="p-4 space-y-4 fade-in">
+    {/* Toolbar */}
+    <div className="flex flex-wrap gap-2 items-center">
+      <GradientButton size="sm" onClick={()=>setAddModal({open:true,mealType:'breakfast'})}>
+        <Icons.Plus className="w-4 h-4"/> Add Food
+      </GradientButton>
+      <GradientButton size="sm" variant="ghost" onClick={()=>setAiModal(true)}>
+        <Icons.Sparkles className="w-4 h-4"/> AI Quick Add
+      </GradientButton>
+      <GradientButton size="sm" variant="ghost">
+        <Icons.Camera className="w-4 h-4"/> Photo Meal
+      </GradientButton>
+      <GradientButton size="sm" variant="ghost">
+        <Icons.Flag className="w-4 h-4"/> Flag Cheat Day
+      </GradientButton>
+      <span className="ml-auto text-sm text-slate-400">Total: <span className="text-emerald-400 font-semibold">{Math.round(total)} kcal</span></span>
+    </div>
+
+    {/* Meal columns */}
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {MEAL_TYPES.map(type=>{
+        const items=logs.filter(l=>l.meal_type===type);
+        const mealCal=items.filter(l=>l.consumed).reduce((s,l)=>s+(+l.calories),0);
+        return <div key={type} className="rounded-2xl border border-slate-700/50 bg-slate-800/30">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50">
+            <div className="flex items-center gap-2">
+              <span>{MEAL_ICONS[type]}</span>
+              <span className="text-sm font-semibold text-slate-200">{MEAL_LABELS[type]}</span>
+              {items.length>0&&<span className="text-xs text-slate-500">({items.length})</span>}
+            </div>
+            <div className="flex items-center gap-2">
+              {mealCal>0&&<span className="text-xs text-emerald-400">{Math.round(mealCal)} kcal</span>}
+              <button onClick={()=>setAddModal({open:true,mealType:type})} className="p-1 text-slate-500 hover:text-emerald-400 hover:bg-slate-700/50 rounded-lg transition-all">
+                <Icons.Plus className="w-4 h-4"/>
+              </button>
+            </div>
+          </div>
+          <div className="p-2 min-h-12 space-y-1">
+            {items.map(item=>(
+              <div key={item.id} className={`flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all group ${item.consumed?'bg-slate-700/20 hover:bg-slate-700/30':'bg-slate-800/20 opacity-60'}`}>
+                <Icons.GripVertical className="w-3.5 h-3.5 text-slate-600 cursor-grab"/>
+                <input type="checkbox" checked={item.consumed} onChange={()=>toggleConsumed(item.id)} className="accent-cyan-500 shrink-0" title="Consumed"/>
+                <div className="flex-1 min-w-0">
+                  <div className={`text-sm truncate ${item.consumed?'text-slate-200':'text-slate-400 line-through'}`}>{item.food_name}</div>
+                  <div className="text-xs text-slate-500">{item.quantity}g</div>
+                </div>
+                <div className="text-right shrink-0 hidden sm:block">
+                  <div className="text-sm font-medium text-emerald-400">{item.calories} kcal</div>
+                  <div className="text-xs text-slate-500">P:{item.protein} C:{item.carbs} F:{item.fats}</div>
+                </div>
+                <button onClick={()=>deleteLog(item.id)} className="text-slate-600 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all">
+                  <Icons.Trash2 className="w-3.5 h-3.5"/>
+                </button>
+              </div>
+            ))}
+            {items.length===0&&<div className="flex items-center justify-center h-10 text-xs text-slate-600 cursor-pointer hover:text-slate-500" onClick={()=>setAddModal({open:true,mealType:type})}>Click + to add food</div>}
+          </div>
+        </div>;
+      })}
+    </div>
+
+    {/* Add Food Modal */}
+    <Modal isOpen={addModal.open} onClose={()=>setAddModal(p=>({...p,open:false}))} title="Add Food" size="md">
+      <div className="p-6 space-y-4">
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1.5">Meal Type</label>
+          <select className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm" value={addModal.mealType} onChange={e=>setAddModal(p=>({...p,mealType:e.target.value}))}>
+            {MEAL_TYPES.map(t=><option key={t} value={t}>{MEAL_LABELS[t]}</option>)}
+          </select>
+        </div>
+        <div className="relative">
+          <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"/>
+          <input className="w-full bg-slate-700/50 border border-slate-600 rounded-xl pl-10 pr-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm" placeholder="Search food database..."/>
+        </div>
+        <div className="space-y-1 max-h-52 overflow-y-auto">
+          {MOCK_FOOD_DB.map(f=>(
+            <button key={f.id} className="w-full text-left flex items-center justify-between px-3 py-2.5 rounded-xl hover:bg-slate-700/50 transition-colors" onClick={()=>setAddModal(p=>({...p,open:false}))}>
+              <div>
+                <div className="text-sm font-medium text-slate-200">{f.name}</div>
+                {f.brand_name&&<div className="text-xs text-slate-500">{f.brand_name}</div>}
+              </div>
+              <div className="text-xs text-emerald-400">{f.calories} kcal/{f.base_quantity}{f.unit}</div>
+            </button>
+          ))}
+        </div>
+        <div className="flex justify-end gap-3">
+          <GradientButton variant="ghost" onClick={()=>setAddModal(p=>({...p,open:false}))}>Cancel</GradientButton>
+        </div>
+      </div>
+    </Modal>
+
+    {/* AI Quick Add Modal */}
+    <Modal isOpen={aiModal} onClose={()=>{setAiModal(false);setAiResult(null);setAiText('');}} title="AI Quick Add">
+      <div className="p-6 space-y-4">
+        <p className="text-sm text-slate-400">Describe your meal in natural language — AI will parse it.</p>
+        {!aiResult ? <>
+          <textarea className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-3 text-slate-100 text-sm min-h-24 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
+            placeholder="e.g. I had 30g almonds and an apple for my afternoon snack"
+            value={aiText} onChange={e=>setAiText(e.target.value)}/>
+          <div className="flex justify-end gap-3">
+            <GradientButton variant="ghost" onClick={()=>setAiModal(false)}>Cancel</GradientButton>
+            <GradientButton onClick={mockAIParse} disabled={aiLoading||!aiText.trim()}>
+              {aiLoading?<><span className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full spin inline-block"/>Parsing...</>:<><Icons.Sparkles className="w-4 h-4"/>Parse</>}
+            </GradientButton>
+          </div>
+        </> : <>
+          <p className="text-sm text-slate-400">{aiResult.length} items found — confirm:</p>
+          <div className="space-y-2">
+            {aiResult.map((item,i)=>(
+              <div key={i} className="flex items-center justify-between px-3 py-2.5 bg-slate-700/30 rounded-xl">
+                <div>
+                  <div className="text-sm font-medium text-slate-200">{item.foodName}</div>
+                  <div className="text-xs text-slate-500">{item.quantity}{item.unit} · {item.mealType}</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-sm text-emerald-400">{item.calories} kcal</div>
+                  <div className="text-xs text-slate-500">P:{item.protein} C:{item.carbs} F:{item.fats}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-end gap-3">
+            <GradientButton variant="ghost" onClick={()=>setAiResult(null)}>Re-parse</GradientButton>
+            <GradientButton onClick={()=>{setAiModal(false);setAiResult(null);setAiText('');}}>Add {aiResult.length} Items</GradientButton>
+          </div>
+        </>}
+      </div>
+    </Modal>
+  </div>;
+}
+
+// ── Food Database View ────────────────────────────────────────────────────
+function FoodDBView() {
+  const [foods,setFoods]=useState(MOCK_FOOD_DB);
+  const [search,setSearch]=useState('');
+  const filtered=foods.filter(f=>f.name.toLowerCase().includes(search.toLowerCase()));
+  return <div className="p-5 space-y-5 fade-in">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <h1 className="text-2xl font-bold text-white">Food Database</h1>
+      <div className="flex flex-wrap gap-2">
+        <GradientButton variant="ghost" size="sm"><Icons.Download className="w-4 h-4"/>Export CSV</GradientButton>
+        <GradientButton variant="ghost" size="sm"><Icons.Upload className="w-4 h-4"/>Import CSV</GradientButton>
+        <GradientButton variant="ghost" size="sm"><Icons.Sparkles className="w-4 h-4"/>AI Enrich</GradientButton>
+        <GradientButton size="sm"><Icons.Plus className="w-4 h-4"/>Add Food</GradientButton>
+      </div>
+    </div>
+    <div className="relative">
+      <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500"/>
+      <input className="w-full bg-slate-700/50 border border-slate-600 rounded-xl pl-10 pr-4 py-2.5 text-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-500/50 text-sm" placeholder="Search food database..." value={search} onChange={e=>setSearch(e.target.value)}/>
+    </div>
+    <GlassCard className="overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead><tr className="border-b border-slate-700">
+            {['Food','Per','Cal','Protein','Carbs','Fat',''].map(h=><th key={h} className={`px-4 py-3 text-slate-400 font-medium ${h===''||h==='Per'||h==='Cal'?'text-right':'text-left'}`}>{h}</th>)}
+          </tr></thead>
+          <tbody>
+            {filtered.map(f=><tr key={f.id} className="border-b border-slate-800 hover:bg-slate-700/20 transition-colors">
+              <td className="px-4 py-3">
+                <div className="font-medium text-slate-200">{f.name}</div>
+                {f.brand_name&&<div className="text-xs text-slate-500">{f.brand_name}</div>}
+              </td>
+              <td className="px-4 py-3 text-right text-slate-400">{f.base_quantity}{f.unit}</td>
+              <td className="px-4 py-3 text-right text-emerald-400 font-medium">{f.calories}</td>
+              <td className="px-4 py-3 text-right text-slate-300">{f.protein}g</td>
+              <td className="px-4 py-3 text-right text-slate-300">{f.carbs}g</td>
+              <td className="px-4 py-3 text-right text-slate-300">{f.fats}g</td>
+              <td className="px-4 py-3">
+                <div className="flex items-center gap-1">
+                  <button className="p-1.5 text-slate-500 hover:text-emerald-400 transition-colors"><Icons.Pencil className="w-3.5 h-3.5"/></button>
+                  <button onClick={()=>setFoods(p=>p.filter(x=>x.id!==f.id))} className="p-1.5 text-slate-500 hover:text-red-400 transition-colors"><Icons.Trash2 className="w-3.5 h-3.5"/></button>
+                </div>
+              </td>
+            </tr>)}
+          </tbody>
+        </table>
+      </div>
+    </GlassCard>
+    <p className="text-xs text-slate-600">{filtered.length} of {foods.length} items</p>
+  </div>;
+}
+
+// ── Reports View ──────────────────────────────────────────────────────────
+function ReportsView() {
+  return <div className="p-5 space-y-5 fade-in">
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <h1 className="text-2xl font-bold text-white">Reports</h1>
+      <div className="flex gap-2">
+        <GradientButton size="sm" variant="ghost"><Icons.Download className="w-4 h-4"/>CSV</GradientButton>
+        <GradientButton size="sm" variant="ghost"><Icons.FileText className="w-4 h-4"/>PDF</GradientButton>
+      </div>
+    </div>
+
+    <GlassCard className="p-4">
+      <div className="flex flex-wrap gap-2 mb-4">
+        {['Last 7 Days','Last 15 Days','Last 30 Days'].map((l,i)=>(
+          <button key={l} className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${i===0?'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30':'bg-slate-700/50 text-slate-400 hover:text-slate-200'}`}>{l}</button>
+        ))}
+      </div>
+      <div className="flex flex-wrap gap-3">
+        <div><label className="block text-xs text-slate-400 mb-1">From</label><input type="date" defaultValue="2026-03-19" className="bg-slate-700/50 border border-slate-600 rounded-xl px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"/></div>
+        <div><label className="block text-xs text-slate-400 mb-1">To</label><input type="date" defaultValue="2026-03-25" className="bg-slate-700/50 border border-slate-600 rounded-xl px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"/></div>
+      </div>
+    </GlassCard>
+
+    <GlassCard className="p-5">
+      <div className="text-sm font-semibold text-slate-300 mb-4">Calories per Day</div>
+      <SVGBars data={MOCK_REPORTS} dataKey="calories" color="#10b981" height={220}/>
+    </GlassCard>
+
+    <GlassCard className="p-5">
+      <div className="text-sm font-semibold text-slate-300 mb-4">Macronutrients (g/day)</div>
+      <SVGLine data={MOCK_REPORTS} lines={[{key:'protein',color:'#10b981',name:'Protein'},{key:'carbs',color:'#06b6d4',name:'Carbs'},{key:'fats',color:'#f59e0b',name:'Fats'}]} height={220}/>
+    </GlassCard>
+  </div>;
+}
+
+// ── Weight Log View ───────────────────────────────────────────────────────
+function WeightView() {
+  const [entries,setEntries]=useState(MOCK_WEIGHT.map((e,i)=>({...e,id:i})));
+  const [w,setW]=useState('');
+  const latest=entries[entries.length-1]?.weight;
+  const trend=entries.length>=2?entries[entries.length-1].weight-entries[entries.length-2].weight:null;
+  return <div className="p-5 max-w-3xl mx-auto space-y-5 fade-in">
+    <h1 className="text-2xl font-bold text-white">Weight Log</h1>
+    <div className="grid grid-cols-3 gap-4">
+      <GlassCard className="p-4"><div className="text-xs text-slate-400 mb-1">Current</div><div className="text-2xl font-bold text-emerald-400">{latest} <span className="text-sm">kg</span></div></GlassCard>
+      <GlassCard className="p-4"><div className="text-xs text-slate-400 mb-1">Last Change</div><div className={`text-2xl font-bold flex items-center gap-1 ${trend<0?'text-emerald-400':trend>0?'text-red-400':'text-slate-400'}`}>{trend!==null&&(trend<0?<Icons.TrendingDown className="w-5 h-5"/>:<Icons.TrendingUp className="w-5 h-5"/>)}{trend!==null?(trend>0?'+':'')+trend.toFixed(1)+' kg':'—'}</div></GlassCard>
+      <GlassCard className="p-4"><div className="text-xs text-slate-400 mb-1">Entries</div><div className="text-2xl font-bold text-cyan-400">{entries.length}</div></GlassCard>
+    </div>
+    <GlassCard className="p-5">
+      <h2 className="text-base font-semibold text-slate-200 mb-3">Log Weight</h2>
+      <div className="flex flex-wrap gap-3 items-end">
+        <div><label className="block text-xs text-slate-400 mb-1">Date</label><input type="date" defaultValue="2026-03-26" className="bg-slate-700/50 border border-slate-600 rounded-xl px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"/></div>
+        <div><label className="block text-xs text-slate-400 mb-1">Weight (kg)</label><input type="number" step="0.1" className="w-28 bg-slate-700/50 border border-slate-600 rounded-xl px-3 py-2 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder="80.1" value={w} onChange={e=>setW(e.target.value)}/></div>
+        <GradientButton onClick={()=>{if(w){setEntries(p=>[...p,{id:Date.now(),date:'Mar 26',weight:parseFloat(w)}]);setW('');}}} disabled={!w}>Log Weight</GradientButton>
+      </div>
+    </GlassCard>
+    <GlassCard className="p-5">
+      <h2 className="text-base font-semibold text-slate-200 mb-3">History</h2>
+      <SVGLine data={entries} lines={[{key:'weight',color:'#10b981',name:'Weight'}]} height={220}/>
+    </GlassCard>
+  </div>;
+}
+
+// ── Settings View ─────────────────────────────────────────────────────────
+function SettingsView() {
+  const [prov,setProv]=useState('gemini');
+  const [keys,setKeys]=useState({gemini:'',openai:'',claude:''});
+  const [saved,setSaved]=useState({});
+  const providers=[
+    {id:'gemini',label:'Gemini',desc:'gemini-2.5-flash-preview-05-20',set:false},
+    {id:'openai',label:'OpenAI',desc:'gpt-4o',set:false},
+    {id:'claude',label:'Claude',desc:'claude-sonnet-4-6',set:true},
+  ];
+  const saveKey=(id)=>{setSaved(p=>({...p,[id]:true}));setTimeout(()=>setSaved(p=>({...p,[id]:false})),2500);};
+  return <div className="p-5 max-w-2xl mx-auto space-y-5 fade-in">
+    <h1 className="text-2xl font-bold text-white">Settings</h1>
+    <GlassCard className="p-6 space-y-6">
+      <div>
+        <h2 className="text-base font-semibold text-slate-200 mb-1">AI Provider</h2>
+        <p className="text-sm text-slate-400 mb-5">All AI calls are made server-side. Keys never reach the browser.</p>
+        <div className="grid grid-cols-3 gap-3 mb-6">
+          {providers.map(p=>(
+            <button key={p.id} onClick={()=>setProv(p.id)} className={`flex flex-col gap-1 p-4 rounded-xl border transition-all text-left ${prov===p.id?'border-emerald-500/50 bg-emerald-900/20':'border-slate-700 hover:border-slate-600 bg-slate-800/30'}`}>
+              <div className="flex items-center justify-between">
+                <span className={`text-sm font-semibold ${prov===p.id?'text-emerald-300':'text-slate-300'}`}>{p.label}</span>
+                {prov===p.id?<Icons.CheckCircle className="w-4 h-4 text-emerald-400"/>:<Icons.Circle className="w-4 h-4 text-slate-600"/>}
+              </div>
+              <span className="text-xs text-slate-500">{p.desc}</span>
+              {p.set&&<span className="text-xs text-emerald-500">✓ Key configured</span>}
+            </button>
+          ))}
+        </div>
+        <div className="space-y-5">
+          {providers.map(p=>(
+            <div key={p.id} className="space-y-2">
+              <label className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                {p.label} API Key
+                {p.set&&<span className="text-xs text-emerald-400 flex items-center gap-1"><Icons.CheckCircle className="w-3 h-3"/>Set</span>}
+              </label>
+              <div className="flex gap-2">
+                <input type="password" className="flex-1 bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-2.5 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50" placeholder={p.set?'••••••••••••••••':'Paste your API key here'} value={keys[p.id]} onChange={e=>setKeys(prev=>({...prev,[p.id]:e.target.value}))}/>
+                <GradientButton onClick={()=>saveKey(p.id)} disabled={!keys[p.id]}>{saved[p.id]?'✓ Saved':'Save'}</GradientButton>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </GlassCard>
+  </div>;
+}
+
+// ── Meal Planner View ─────────────────────────────────────────────────────
+const MOCK_PLAN=`## 🌅 Breakfast
+- **Scrambled Eggs (3 eggs)** — 210 kcal | P: 18g, C: 2g, F: 14g
+- **Whole Grain Toast (2 slices)** — 160 kcal | P: 6g, C: 30g, F: 2g
+- **Orange Juice (200ml)** — 88 kcal
+
+## ☀️ Lunch
+- **Grilled Chicken Wrap** — 420 kcal | P: 38g, C: 42g, F: 10g
+  - Whole wheat tortilla, chicken breast, mixed greens, avocado, Greek yogurt dressing
+- **Side Salad** — 45 kcal | mixed greens, cucumber, cherry tomatoes
+
+## 🌙 Dinner
+- **Baked Cod with Lemon Herb Crust** — 280 kcal | P: 42g, C: 8g, F: 8g
+- **Steamed Broccoli & Quinoa** — 230 kcal | P: 9g, C: 38g, F: 4g
+- **Mixed Berry Smoothie** — 140 kcal
+
+---
+**Estimated Total: ~1,573 kcal | Protein: ~113g | Carbs: ~120g | Fats: ~38g**`;
+
+function PlannerView() {
+  const [plan,setPlan]=useState(null);
+  const [loading,setLoading]=useState(false);
+  const totals=calcTotals(MOCK_LOGS);
+  const generate=()=>{setLoading(true);setTimeout(()=>{setPlan(MOCK_PLAN);setLoading(false);},2200);};
+  const renderMD=(text)=>text.split('\n').map((line,i)=>{
+    if(line.startsWith('## ')) return <h2 key={i} className="text-base font-bold text-emerald-400 mt-5 first:mt-0">{line.slice(3)}</h2>;
+    if(line.startsWith('- **')) return <p key={i} className="pl-4 text-slate-300 leading-relaxed">{line.slice(2).replace(/\*\*/g,'')}</p>;
+    if(line.startsWith('  - ')) return <p key={i} className="pl-8 text-slate-500 text-xs">{line.slice(4)}</p>;
+    if(line.startsWith('- ')) return <p key={i} className="pl-4 text-slate-400">{line.slice(2)}</p>;
+    if(line.startsWith('---')) return <hr key={i} className="border-slate-700 my-3"/>;
+    if(line.startsWith('**')) return <p key={i} className="font-semibold text-slate-200 mt-2">{line.replace(/\*\*/g,'')}</p>;
+    if(line.trim()==='') return <div key={i} className="h-1"/>;
+    return <p key={i} className="text-slate-300">{line}</p>;
+  });
+  return <div className="p-5 max-w-2xl mx-auto space-y-5 fade-in">
+    <div className="flex items-center justify-between">
+      <h1 className="text-2xl font-bold text-white">AI Meal Planner</h1>
+      <GradientButton onClick={generate} disabled={loading}>
+        <Icons.Cpu className="w-4 h-4"/>{loading?'Generating...':'Generate Plan'}
+      </GradientButton>
+    </div>
+    <GlassCard className="p-4">
+      <p className="text-sm text-slate-400 mb-2">Context for plan generation:</p>
+      <div className="flex flex-wrap gap-4 text-sm">
+        <span className="text-slate-300">Today: <span className="text-emerald-400">{totals.calories} kcal</span></span>
+        <span className="text-slate-300">Protein: <span className="text-cyan-400">{totals.protein}g</span></span>
+        <span className="text-slate-300">Weight: <span className="text-cyan-400">80.1 kg</span></span>
+        <span className="text-slate-300">Age: <span className="text-cyan-400">28</span></span>
+      </div>
+    </GlassCard>
+    {loading&&<GlassCard className="p-12 flex flex-col items-center gap-4">
+      <div className="w-12 h-12 border-2 border-slate-600 border-t-emerald-500 rounded-full spin"/>
+      <p className="text-slate-400">Creating your personalized meal plan...</p>
+    </GlassCard>}
+    {plan&&!loading&&<GlassCard className="p-6"><div className="space-y-1 text-sm">{renderMD(plan)}</div></GlassCard>}
+    {!plan&&!loading&&<GlassCard className="p-12 flex flex-col items-center gap-4 text-center">
+      <Icons.Cpu className="w-12 h-12 text-slate-600"/>
+      <div><p className="text-slate-400">Click "Generate Plan" to create a personalized next-day meal plan</p><p className="text-slate-600 text-sm mt-1">Uses your today's intake and profile as context</p></div>
+    </GlassCard>}
+  </div>;
+}
+
+// ── Simple placeholder views ───────────────────────────────────────────────
+function ProfileView() {
+  return <div className="p-5 max-w-xl mx-auto space-y-5 fade-in">
+    <h1 className="text-2xl font-bold text-white">Profile</h1>
+    <div className="grid grid-cols-2 gap-4">
+      {[{l:'Age',v:'28',c:'emerald'},{l:'Weight',v:'80.1 kg',c:'cyan'},{l:'Height',v:'178 cm',c:'emerald'},{l:'BMI',v:'25.3',c:'cyan'}].map(({l,v,c})=>(
+        <GlassCard key={l} className="p-4 text-center">
+          <div className={`text-2xl font-bold text-${c}-400`}>{v}</div>
+          <div className="text-xs text-slate-400 mt-1">{l}</div>
+        </GlassCard>
+      ))}
+    </div>
+    <GlassCard className="p-6">
+      <div className="grid grid-cols-2 gap-4">
+        {[{l:'Full Name',v:'Sudar',type:'text'},{l:'Date of Birth',v:'1997-05-15',type:'date'},{l:'Weight (kg)',v:'80.1',type:'number'},{l:'Height (cm)',v:'178',type:'number'},{l:'Waist (cm)',v:'84',type:'number'}].map(({l,v,type})=>(
+          <div key={l} className={l==='Full Name'?'col-span-2':''}>
+            <label className="block text-xs font-medium text-slate-400 mb-1.5">{l}</label>
+            <input type={type} defaultValue={v} className="w-full bg-slate-700/50 border border-slate-600 rounded-xl px-4 py-2.5 text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"/>
+          </div>
+        ))}
+      </div>
+      <div className="mt-5"><GradientButton>Save Profile</GradientButton></div>
+    </GlassCard>
+  </div>;
+}
+
+function DataView() {
+  return <div className="p-5 max-w-xl mx-auto space-y-5 fade-in">
+    <h1 className="text-2xl font-bold text-white">Data Management</h1>
+    <GlassCard className="p-6 space-y-4">
+      <div><h2 className="text-base font-semibold text-slate-200 mb-1">Export Backup</h2><p className="text-sm text-slate-400 mb-3">Download all your data as a JSON file.</p><GradientButton><Icons.Download className="w-4 h-4"/>Download Backup JSON</GradientButton></div>
+    </GlassCard>
+    <GlassCard className="p-6 space-y-4">
+      <div><h2 className="text-base font-semibold text-slate-200 mb-1">Restore from Backup</h2>
+        <div className="flex items-start gap-2 p-3 bg-orange-900/20 border border-orange-700/40 rounded-xl mb-3">
+          <Icons.AlertTriangle className="w-4 h-4 text-orange-400 shrink-0 mt-0.5"/><p className="text-sm text-orange-300">Importing will <strong>replace all current data</strong>. Export a backup first.</p>
+        </div>
+        <label className="flex flex-col items-center gap-3 p-6 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:border-emerald-500/50 transition-colors">
+          <Icons.Upload className="w-8 h-8 text-slate-500"/><span className="text-sm text-slate-400">Select backup JSON file</span><input type="file" accept=".json" className="hidden"/>
+        </label>
+      </div>
+    </GlassCard>
+  </div>;
+}
+
+// ── App Shell ─────────────────────────────────────────────────────────────
+const VIEWS = {dashboard:DashboardView,logger:LoggerView,fooddb:FoodDBView,reports:ReportsView,weight:WeightView,profile:ProfileView,planner:PlannerView,data:DataView,settings:SettingsView};
+
+function App() {
+  const [activeView,setActiveView]=useState('dashboard');
+  const [date,setDate]=useState('2026-03-25');
+  const [sidebarOpen,setSidebarOpen]=useState(false);
+  const ActiveView=VIEWS[activeView]||DashboardView;
+  const showDate=['dashboard','logger'].includes(activeView);
+
+  return <div className="flex h-screen bg-slate-900 overflow-hidden">
+    {/* Desktop sidebar */}
+    <div className="hidden md:flex"><Sidebar activeView={activeView} setActiveView={(v)=>{setActiveView(v);setSidebarOpen(false);}}/></div>
+    {/* Mobile sidebar */}
+    {sidebarOpen&&<div className="fixed inset-0 z-40 md:hidden">
+      <div className="absolute inset-0 bg-black/50" onClick={()=>setSidebarOpen(false)}/>
+      <div className="relative w-56 h-full"><Sidebar activeView={activeView} setActiveView={(v)=>{setActiveView(v);setSidebarOpen(false);}}/></div>
+    </div>}
+    {/* Main */}
+    <div className="flex-1 flex flex-col overflow-hidden">
+      {/* TopBar */}
+      <header className="h-14 flex items-center justify-between px-4 border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-3">
+          <button onClick={()=>setSidebarOpen(true)} className="md:hidden text-slate-400 hover:text-slate-200"><Icons.Menu className="w-5 h-5"/></button>
+          {showDate&&<div className="flex items-center gap-1">
+            <button onClick={()=>{const d=new Date(date);d.setDate(d.getDate()-1);setDate(d.toISOString().split('T')[0]);}} className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-all"><Icons.ChevronLeft className="w-4 h-4"/></button>
+            <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-800 rounded-lg">
+              <Icons.Calendar className="w-4 h-4 text-emerald-400"/>
+              <input type="date" value={date} onChange={e=>setDate(e.target.value)} className="bg-transparent text-sm text-slate-200 focus:outline-none cursor-pointer"/>
+            </div>
+            <button onClick={()=>{const d=new Date(date);d.setDate(d.getDate()+1);setDate(d.toISOString().split('T')[0]);}} className="p-1.5 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-all"><Icons.ChevronRight className="w-4 h-4"/></button>
+          </div>}
+        </div>
+        <div className="flex items-center gap-3">
+          {showDate&&<span className="hidden md:block text-sm text-slate-400">{new Date(date+'T00:00:00Z').toLocaleDateString('en-US',{weekday:'short',year:'numeric',month:'short',day:'numeric',timeZone:'UTC'})}</span>}
+          <span className="text-xs bg-gradient-to-r from-emerald-500 to-cyan-500 text-white px-2.5 py-1 rounded-full font-medium">Demo Mode</span>
+        </div>
+      </header>
+      <main className="flex-1 overflow-y-auto"><ActiveView/></main>
+    </div>
+  </div>;
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
