@@ -9,6 +9,7 @@ import { existsSync, mkdirSync } from 'fs'
 dotenv.config()
 
 import authRoutes from './routes/auth.js'
+import socialAuthRoutes from './routes/socialAuth.js'
 import dailyLogsRoutes from './routes/dailyLogs.js'
 import foodDatabaseRoutes from './routes/foodDatabase.js'
 import weightLogRoutes from './routes/weightLog.js'
@@ -50,6 +51,7 @@ app.use('/uploads', express.static(join(__dirname, '..', 'uploads')))
 
 // API routes
 app.use('/api/auth', authRoutes)
+app.use('/api/auth', socialAuthRoutes)
 app.use('/api/daily-logs', dailyLogsRoutes)
 app.use('/api/food-database', foodDatabaseRoutes)
 app.use('/api/weight-log', weightLogRoutes)

@@ -1,17 +1,47 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '../../context/AuthContext.jsx'
 import GradientButton from '../ui/GradientButton.jsx'
 import ErrorBanner from '../ui/ErrorBanner.jsx'
 import LoadingSpinner from '../ui/LoadingSpinner.jsx'
 import { Activity } from 'lucide-react'
 
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID
+
 export default function LoginScreen() {
-  const { login, register } = useAuth()
+  const { login, register, googleLogin } = useAuth()
   const [tab, setTab] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState(null)
+  const googleBtnRef = useRef(null)
+
+  useEffect(() => {
+    if (!GOOGLE_CLIENT_ID || !window.google) return
+    window.google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: async ({ credential }) => {
+        setGoogleLoading(true)
+        setError(null)
+        try {
+          await googleLogin(credential)
+        } catch (err) {
+          setError(err.response?.data?.error || 'Google sign-in failed')
+        } finally {
+          setGoogleLoading(false)
+        }
+      },
+    })
+    if (googleBtnRef.current) {
+      window.google.accounts.id.renderButton(googleBtnRef.current, {
+        theme: 'filled_black',
+        size: 'large',
+        width: googleBtnRef.current.offsetWidth || 400,
+        text: tab === 'login' ? 'signin_with' : 'signup_with',
+      })
+    }
+  }, [tab, googleLogin])  // re-render when tab changes to update button text
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -103,6 +133,25 @@ export default function LoginScreen() {
               )}
             </GradientButton>
           </form>
+
+          {/* Google Sign In */}
+          {GOOGLE_CLIENT_ID && (
+            <>
+              <div className="flex items-center gap-3 my-5">
+                <div className="flex-1 h-px bg-slate-700" />
+                <span className="text-xs text-slate-500">or continue with</span>
+                <div className="flex-1 h-px bg-slate-700" />
+              </div>
+
+              {googleLoading ? (
+                <div className="flex justify-center py-2">
+                  <LoadingSpinner size="sm" />
+                </div>
+              ) : (
+                <div ref={googleBtnRef} className="w-full flex justify-center" />
+              )}
+            </>
+          )}
         </div>
 
         <p className="text-center text-slate-600 text-xs mt-6">
