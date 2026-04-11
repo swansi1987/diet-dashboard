@@ -34,6 +34,9 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const res = await client.post('/auth/login', { email, password })
+    if (!res.data?.accessToken || !res.data?.user) {
+      throw new Error('Unexpected server response — API may be misconfigured.')
+    }
     setAccessToken(res.data.accessToken)
     setUser(res.data.user)
     return res.data.user
@@ -41,6 +44,9 @@ export function AuthProvider({ children }) {
 
   const register = async (email, password) => {
     const res = await client.post('/auth/register', { email, password })
+    if (!res.data?.accessToken || !res.data?.user) {
+      throw new Error('Unexpected server response — API may be misconfigured.')
+    }
     setAccessToken(res.data.accessToken)
     setUser(res.data.user)
     return res.data.user

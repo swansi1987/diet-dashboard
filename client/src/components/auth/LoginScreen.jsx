@@ -48,13 +48,28 @@ export default function LoginScreen() {
     setLoading(true)
     setError(null)
     try {
+      let user
       if (tab === 'login') {
-        await login(email, password)
+        user = await login(email, password)
       } else {
-        await register(email, password)
+        user = await register(email, password)
+      }
+      // Guard: if no user returned, the API likely returned unexpected data (e.g. HTML instead of JSON)
+      if (!user) {
+        setError('Server returned an unexpected response. Please check your connection and try again.')
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'Something went wrong')
+      // Axios error with a JSON response body from the API
+      if (err.response?.data?.error) {
+        setError(err.response.data.error)
+      } else if (err.response?.status) {
+        setError(`Server error (${err.response.status}). Please try again later.`)
+      } else if (err.request) {
+        // Request was made but no response received (network error / server down)
+        setError('Cannot reach the server. Please check your internet connection.')
+      } else {
+        setError(err.message || 'Something went wrong. Please try again.')
+      }
     } finally {
       setLoading(false)
     }

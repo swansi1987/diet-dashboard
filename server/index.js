@@ -76,6 +76,11 @@ app.use('/api/push-tokens', pushTokensRoutes)
 if (process.env.NODE_ENV === 'production') {
   const publicDir = join(__dirname, 'public')
   app.use(express.static(publicDir))
+  // Explicit 404 for any unmatched /api/* route (prevents SPA fallback eating API calls)
+  app.all('/api/*', (req, res) => {
+    res.status(404).json({ error: `API route not found: ${req.method} ${req.path}` })
+  })
+  // SPA fallback — only for non-API paths
   app.get('*', (req, res) => res.sendFile(join(publicDir, 'index.html')))
 }
 
