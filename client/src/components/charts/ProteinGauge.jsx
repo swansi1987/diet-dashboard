@@ -32,7 +32,7 @@ export default function ProteinGauge({ currentG, weightKg, size = 180 }) {
   const color = ratio < GOAL ? '#f59e0b' : ratio < MAX ? '#10b981' : '#06b6d4'
 
   return (
-    <svg width={size} height={size * 0.75} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
+    <svg width={size} height={size * 0.85} viewBox={`0 0 ${size} ${size}`} className="overflow-visible">
       {/* Track */}
       <path d={arcPath(startAngle, endAngle, r)} fill="none" stroke="#1e293b" strokeWidth={16} strokeLinecap="round" />
       {/* Fill */}
@@ -44,15 +44,15 @@ export default function ProteinGauge({ currentG, weightKg, size = 180 }) {
         const pt = polarToXY(goalAngle, r)
         return <circle cx={pt.x} cy={pt.y} r={5} fill="#64748b" />
       })()}
-
+ 
       {/* Center text */}
-      <text x={cx} y={cy - 8} textAnchor="middle" fill={color} fontSize={28} fontWeight="bold">
+      <text x={cx} y={cy - 10} textAnchor="middle" fill={color} fontSize={34} fontWeight="bold">
         {ratio.toFixed(1)}
       </text>
       <text x={cx} y={cy + 14} textAnchor="middle" fill="#64748b" fontSize={11}>
         g/kg body weight
       </text>
-      <text x={cx} y={cy + 30} textAnchor="middle" fill="#475569" fontSize={10}>
+      <text x={cx} y={cy + 48} textAnchor="middle" fill="#475569" fontSize={11} fontWeight="600">
         Goal: {GOAL} g/kg
       </text>
     </svg>

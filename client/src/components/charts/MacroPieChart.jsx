@@ -39,8 +39,8 @@ export default function MacroPieChart({ protein, carbs, fats }) {
         />
         <Legend
           iconType="circle"
-          iconSize={8}
-          formatter={(v) => <span style={{ color: '#94a3b8', fontSize: '11px' }}>{v}</span>}
+          iconSize={10}
+          formatter={(v) => <span style={{ color: '#94a3b8', fontSize: '14px', fontWeight: 500 }}>{v}</span>}
         />
       </PieChart>
     </ResponsiveContainer>
