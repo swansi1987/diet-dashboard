@@ -13,7 +13,9 @@ import MicroBarChart from '../charts/MicroBarChart.jsx'
 import ActivityCalendar from '../charts/ActivityCalendar.jsx'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { formatDate } from '../../utils/dateUtils.js'
-import { Flag, Camera } from 'lucide-react'
+import { Flag, Camera, Zap, Beef, Wheat, Droplets, UtensilsCrossed } from 'lucide-react'
+
+const CALORIE_GOAL = 2000
 
 export default function DashboardView() {
   const { selectedDate } = useApp()
@@ -24,82 +26,137 @@ export default function DashboardView() {
 
   const totals = calcTotals(logs)
   const cheatDay = isCheatDay(selectedDate)
+  const calorieProgress = Math.min((totals.calories / CALORIE_GOAL) * 100, 100)
 
   const weightChartData = weightEntries.map(e => ({
     date: formatDate(e.date, { month: 'short', day: 'numeric' }),
     weight: parseFloat(e.weight),
   }))
 
-  const CALORIE_GOAL = 2000
+  if (loading) return (
+    <div className="flex justify-center items-center h-64">
+      <LoadingSpinner size="lg" />
+    </div>
+  )
 
-  if (loading) return <div className="flex justify-center items-center h-64"><LoadingSpinner /></div>
+  const STAT_CARDS = [
+    {
+      label: 'Calories',
+      value: Math.round(totals.calories),
+      unit: 'kcal',
+      icon: Zap,
+      color: 'var(--brand)',
+      sub: `${Math.round(calorieProgress)}% of ${CALORIE_GOAL} goal`,
+      progress: calorieProgress,
+    },
+    {
+      label: 'Protein',
+      value: totals.protein.toFixed(1),
+      unit: 'g',
+      icon: Beef,
+      color: '#38BDF8',
+    },
+    {
+      label: 'Carbs',
+      value: totals.carbs.toFixed(1),
+      unit: 'g',
+      icon: Wheat,
+      color: '#FBBF24',
+    },
+    {
+      label: 'Fats',
+      value: totals.fats.toFixed(1),
+      unit: 'g',
+      icon: Droplets,
+      color: '#FB923C',
+    },
+    {
+      label: 'Meals',
+      value: logs.length,
+      unit: '',
+      icon: UtensilsCrossed,
+      color: 'var(--brand-2)',
+      sub: `${logs.filter(l => l.consumed).length} consumed`,
+    },
+  ]
 
   return (
-    <div className="p-4 md:p-6 space-y-6">
+    <div className="p-4 md:p-6 space-y-5">
       {/* Cheat day banner */}
       {cheatDay && (
-        <div className="flex items-center gap-2 px-4 py-3 bg-orange-900/30 border border-orange-700/50 rounded-xl text-orange-300 text-sm">
-          <Flag className="w-4 h-4" /> This day is flagged as a cheat day
+        <div className="alert alert-warning animate-slide-up">
+          <Flag size={14} className="shrink-0 mt-0.5" />
+          <span className="text-sm font-medium">This day is flagged as a cheat day</span>
         </div>
       )}
 
-      {/* Calorie + macro stat strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        {[
-          { label: 'Calories', value: Math.round(totals.calories), unit: 'kcal', color: 'emerald', sub: `of ${CALORIE_GOAL} goal` },
-          { label: 'Protein', value: totals.protein, unit: 'g', color: 'cyan' },
-          { label: 'Carbs', value: totals.carbs, unit: 'g', color: 'yellow' },
-          { label: 'Fats', value: totals.fats, unit: 'g', color: 'orange' },
-          { label: 'Meals', value: logs.length, unit: '', color: 'slate', sub: `${logs.filter(l => l.consumed).length} consumed` },
-        ].map(({ label, value, unit, color, sub }) => (
+      {/* Stat strip */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        {STAT_CARDS.map(({ label, value, unit, icon: Icon, color, sub, progress }) => (
           <GlassCard key={label} className="p-4">
-            <div className="text-xs text-slate-400 mb-1">{label}</div>
-            <div className={`text-2xl font-bold text-${color}-400`}>
-              {value}<span className="text-sm font-normal ml-0.5 text-slate-500">{unit}</span>
+            <div className="flex items-start justify-between mb-2">
+              <span className="section-title">{label}</span>
+              <div
+                className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: `${color}1A` }}
+              >
+                <Icon size={14} style={{ color }} />
+              </div>
             </div>
-            {sub && <div className="text-xs text-slate-600 mt-0.5">{sub}</div>}
+            <div className="flex items-baseline gap-1">
+              <span style={{ fontSize: '24px', fontWeight: 700, color, lineHeight: 1 }}>{value}</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{unit}</span>
+            </div>
+            {sub && <p style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{sub}</p>}
+            {progress !== undefined && (
+              <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ background: 'var(--bg-surface-3)' }}>
+                <div
+                  className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${progress}%`, background: color }}
+                />
+              </div>
+            )}
           </GlassCard>
         ))}
       </div>
 
       {/* Main grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left column */}
-        <div className="space-y-6">
-          {/* Protein gauge */}
-          <GlassCard className="p-6">
-            <div className="text-sm font-semibold text-slate-300 mb-4">Protein Intake</div>
+        <div className="space-y-5">
+          <GlassCard className="p-5">
+            <p className="section-title mb-4">Target Protein Consumption</p>
             <div className="flex justify-center">
               <ProteinGauge currentG={totals.protein} weightKg={latestWeight || profile?.weight} />
             </div>
           </GlassCard>
 
-          {/* Macro distribution */}
-          <GlassCard className="p-6">
-            <div className="text-sm font-semibold text-slate-300 mb-2">Macro Distribution</div>
+          <GlassCard className="p-5">
+            <p className="section-title mb-2">Macro Distribution</p>
             <MacroPieChart protein={totals.protein} carbs={totals.carbs} fats={totals.fats} />
           </GlassCard>
         </div>
 
         {/* Middle column */}
-        <div className="space-y-6">
-          {/* Micronutrients */}
-          <GlassCard className="p-6">
-            <div className="text-sm font-semibold text-slate-300 mb-4">Micronutrients (% RDA)</div>
+        <div className="space-y-5">
+          <GlassCard className="p-5">
+            <p className="section-title mb-4">Micronutrients (% RDA)</p>
             <MicroBarChart totals={totals} />
           </GlassCard>
 
-          {/* Weight progress */}
           {weightEntries.length > 1 && (
-            <GlassCard className="p-6">
-              <div className="text-sm font-semibold text-slate-300 mb-4">Weight (last 30 days)</div>
+            <GlassCard className="p-5">
+              <p className="section-title mb-4">Weight — last 30 days</p>
               <ResponsiveContainer width="100%" height={150}>
                 <LineChart data={weightChartData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
-                  <XAxis dataKey="date" stroke="#475569" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-                  <YAxis stroke="#475569" tick={{ fontSize: 10 }} domain={['auto', 'auto']} />
-                  <Tooltip contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '8px', fontSize: '11px' }} />
-                  <Line type="monotone" dataKey="weight" stroke="#10b981" strokeWidth={2} dot={false} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                  <XAxis dataKey="date" stroke="var(--text-muted)" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} interval="preserveStartEnd" />
+                  <YAxis stroke="var(--text-muted)" tick={{ fontSize: 10, fill: 'var(--text-muted)' }} domain={['auto', 'auto']} />
+                  <Tooltip
+                    contentStyle={{ background: 'var(--bg-surface)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '12px', color: 'var(--text-primary)' }}
+                    itemStyle={{ color: 'var(--brand)' }}
+                  />
+                  <Line type="monotone" dataKey="weight" stroke="var(--brand)" strokeWidth={2} dot={false} />
                 </LineChart>
               </ResponsiveContainer>
             </GlassCard>
@@ -107,10 +164,9 @@ export default function DashboardView() {
         </div>
 
         {/* Right column */}
-        <div className="space-y-6">
-          {/* Activity calendar */}
-          <GlassCard className="p-6">
-            <div className="text-sm font-semibold text-slate-300 mb-4">Activity</div>
+        <div className="space-y-5">
+          <GlassCard className="p-5">
+            <p className="section-title mb-4">Activity</p>
             <ActivityCalendar logs={logs} cheatDays={cheatDays} />
           </GlassCard>
         </div>
@@ -118,25 +174,35 @@ export default function DashboardView() {
 
       {/* Today's meals */}
       {logs.length > 0 && (
-        <GlassCard className="p-6">
-          <div className="text-sm font-semibold text-slate-300 mb-4">Today's Meals</div>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <GlassCard className="p-5">
+          <p className="section-title mb-4">Today's Meals</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {MEAL_TYPES.map(type => {
               const items = logs.filter(l => l.meal_type === type)
-              if (items.length === 0) return null
+              if (!items.length) return null
               const mealCal = items.filter(i => i.consumed).reduce((s, l) => s + (+l.calories || 0), 0)
               return (
-                <div key={type} className="bg-slate-700/20 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-slate-300">{MEAL_ICONS[type]} {MEAL_LABELS[type]}</span>
-                    <span className="text-xs text-emerald-400">{Math.round(mealCal)} kcal</span>
+                <div key={type} className="rounded-xl p-4" style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border)' }}>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="flex items-center gap-1.5" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                      {(() => {
+                        const Icon = MEAL_ICONS[type]
+                        return <Icon size={14} style={{ color: 'var(--brand)' }} />
+                      })()}
+                      {MEAL_LABELS[type]}
+                    </span>
+                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--brand)' }}>{Math.round(mealCal)} kcal</span>
                   </div>
-                  <div className="space-y-1">
+                  <div className="space-y-1.5">
                     {items.map(item => (
-                      <div key={item.id} className={`flex items-center gap-2 text-xs ${item.consumed ? 'text-slate-400' : 'text-slate-600 line-through'}`}>
-                        {item.is_junk_meal && <Camera className="w-3 h-3 text-orange-400 shrink-0" />}
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-2"
+                        style={{ fontSize: '12px', color: item.consumed ? 'var(--text-secondary)' : 'var(--text-muted)', textDecoration: item.consumed ? 'none' : 'line-through' }}
+                      >
+                        {item.is_junk_meal && <Camera size={11} style={{ color: 'var(--warning)', flexShrink: 0 }} />}
                         <span className="flex-1 truncate">{item.food_name}</span>
-                        <span className="shrink-0">{item.calories} kcal</span>
+                        <span style={{ flexShrink: 0, color: 'var(--text-muted)' }}>{item.calories} kcal</span>
                       </div>
                     ))}
                   </div>

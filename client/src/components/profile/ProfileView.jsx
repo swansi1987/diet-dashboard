@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useProfile } from '../../hooks/useProfile.js'
+import { useWeightLog } from '../../hooks/useWeightLog.js'
 import GlassCard from '../ui/GlassCard.jsx'
 import GradientButton from '../ui/GradientButton.jsx'
 import ErrorBanner from '../ui/ErrorBanner.jsx'
@@ -8,22 +9,24 @@ import { User, Calendar, Ruler, Weight, Activity } from 'lucide-react'
 
 export default function ProfileView() {
   const { profile, loading, saveProfile, age } = useProfile()
+  const { latestWeight } = useWeightLog(1)
   const [form, setForm] = useState({ name: '', dob: '', weight: '', height: '', waist: '' })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    if (profile) {
-      setForm({
-        name: profile.name || '',
-        dob: profile.dob ? profile.dob.split('T')[0] : '',
-        weight: profile.weight || '',
-        height: profile.height || '',
-        waist: profile.waist || '',
-      })
+    if (profile || latestWeight !== null) {
+      setForm(prev => ({
+        ...prev,
+        name: profile?.name || prev.name,
+        dob: profile?.dob ? profile.dob.split('T')[0] : prev.dob,
+        weight: latestWeight !== null ? latestWeight : (profile?.weight || prev.weight),
+        height: profile?.height || prev.height,
+        waist: profile?.waist || prev.waist,
+      }))
     }
-  }, [profile])
+  }, [profile, latestWeight])
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -125,7 +128,7 @@ export default function ProfileView() {
               </label>
               <input
                 type="number"
-                step="0.1"
+                step="0.01"
                 min="1"
                 className="input-field"
                 value={form.weight}
@@ -140,7 +143,7 @@ export default function ProfileView() {
               </label>
               <input
                 type="number"
-                step="1"
+                step="0.01"
                 min="1"
                 className="input-field"
                 value={form.height}
@@ -155,7 +158,7 @@ export default function ProfileView() {
               </label>
               <input
                 type="number"
-                step="0.1"
+                step="0.01"
                 min="1"
                 className="input-field"
                 value={form.waist}

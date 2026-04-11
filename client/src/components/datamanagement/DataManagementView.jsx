@@ -4,17 +4,35 @@ import GradientButton from '../ui/GradientButton.jsx'
 import ErrorBanner from '../ui/ErrorBanner.jsx'
 import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 import client from '../../api/client.js'
-import { Download, Upload, AlertTriangle } from 'lucide-react'
+import { Download, Upload, AlertTriangle, CheckCircle, Check } from 'lucide-react'
 
 export default function DataManagementView() {
   const [importing, setImporting] = useState(false)
+  const [exporting, setExporting] = useState(false)
   const [importError, setImportError] = useState(null)
   const [importResult, setImportResult] = useState(null)
   const [importData, setImportData] = useState(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
-  const handleExport = () => {
-    window.open('/api/data/export', '_blank')
+  const handleExport = async () => {
+    setExporting(true)
+    setImportError(null)
+    setImportResult(null)
+    try {
+      const res = await client.get('/data/export', { responseType: 'blob' })
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/json' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `diet-dashboard-backup-${new Date().toISOString().split('T')[0]}.json`)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      setImportError('Export failed. Please try again.')
+    } finally {
+      setExporting(false)
+    }
   }
 
   const handleFileSelect = (e) => {
@@ -58,8 +76,8 @@ export default function DataManagementView() {
             Download all your data as a JSON file including daily logs, food database, weight log, and profile.
           </p>
         </div>
-        <GradientButton onClick={handleExport}>
-          <Download className="w-4 h-4 mr-2" /> Download Backup JSON
+        <GradientButton onClick={handleExport} disabled={exporting}>
+          <Download className="w-4 h-4 mr-2" /> {exporting ? 'Downloading...' : 'Download Backup JSON'}
         </GradientButton>
       </GlassCard>
 
@@ -79,13 +97,15 @@ export default function DataManagementView() {
         {importError && <ErrorBanner message={importError} onDismiss={() => setImportError(null)} />}
         {importResult && (
           <div className="flex items-center gap-2 px-4 py-3 bg-emerald-900/30 border border-emerald-700/50 rounded-xl text-emerald-300 text-sm">
-            ✅ {importResult}
+            <CheckCircle size={16} /> {importResult}
           </div>
         )}
 
         <label className="flex flex-col items-center gap-3 p-6 border-2 border-dashed border-slate-600 rounded-xl cursor-pointer hover:border-emerald-500/50 transition-colors">
           <Upload className="w-8 h-8 text-slate-500" />
-          <span className="text-sm text-slate-400">{importData ? '✅ File loaded — ready to import' : 'Select backup JSON file'}</span>
+          <span className="text-sm text-slate-400 flex items-center gap-1.5 justify-center">
+            {importData ? <><Check size={14} className="text-emerald-500" /> File loaded — ready to import</> : 'Select backup JSON file'}
+          </span>
           <input type="file" accept=".json" className="hidden" onChange={handleFileSelect} />
         </label>
 

@@ -1,7 +1,15 @@
-export default function GlassCard({ children, className = '', onClick }) {
+export default function GlassCard({ children, className = '', onClick, variant = 'default' }) {
+  const base = 'card transition-all duration-200'
+  const variants = {
+    default: '',
+    elevated: 'shadow-sm',
+    hover: 'card-hover cursor-pointer',
+    flat: 'border-0 shadow-none',
+  }
   return (
     <div
-      className={`bg-slate-800/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl ${onClick ? 'cursor-pointer hover:border-slate-600/50' : ''} transition-all duration-200 ${className}`}
+      className={`${base} ${variants[variant] || ''} ${onClick ? 'card-hover cursor-pointer' : ''} ${className}`}
+      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border)' }}
       onClick={onClick}
     >
       {children}

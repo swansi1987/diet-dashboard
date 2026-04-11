@@ -1,17 +1,37 @@
-export default function LoadingSpinner({ size = 'md', className = '' }) {
-  const sizes = { sm: 'w-4 h-4', md: 'w-8 h-8', lg: 'w-12 h-12' }
+const SIZES = { xs: 14, sm: 18, md: 28, lg: 40 }
+
+export function LoadingSpinner({ size = 'md', className = '' }) {
+  const px = SIZES[size] || SIZES.md
   return (
-    <div className={`${sizes[size]} border-2 border-slate-600 border-t-emerald-500 rounded-full animate-spin ${className}`} />
+    <svg
+      className={className}
+      width={px}
+      height={px}
+      viewBox="0 0 24 24"
+      fill="none"
+      style={{ animation: 'spin 0.7s linear infinite' }}
+      aria-label="Loading"
+    >
+      <circle cx="12" cy="12" r="10" stroke="var(--border)" strokeWidth="2.5" />
+      <path
+        d="M12 2 A10 10 0 0 1 22 12"
+        stroke="var(--brand)"
+        strokeWidth="2.5"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
 
 export function FullPageSpinner() {
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-      <div className="flex flex-col items-center gap-4">
-        <LoadingSpinner size="lg" />
-        <p className="text-slate-400 text-sm">Loading...</p>
-      </div>
+    <div
+      className="flex items-center justify-center h-screen"
+      style={{ background: 'var(--bg-base)' }}
+    >
+      <LoadingSpinner size="lg" />
     </div>
   )
 }
+
+export default LoadingSpinner

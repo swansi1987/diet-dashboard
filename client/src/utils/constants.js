@@ -9,13 +9,15 @@ export const MEAL_LABELS = {
   'post-workout': 'Post-Workout',
 }
 
+import { Sunrise, Sun, Moon, Apple, Dumbbell, Activity } from 'lucide-react'
+
 export const MEAL_ICONS = {
-  breakfast: '🌅',
-  lunch: '☀️',
-  dinner: '🌙',
-  snacks: '🍎',
-  'pre-workout': '💪',
-  'post-workout': '🔄',
+  breakfast: Sunrise,
+  lunch: Sun,
+  dinner: Moon,
+  snacks: Apple,
+  'pre-workout': Dumbbell,
+  'post-workout': Activity,
 }
 
 // Daily Reference Values (RDA)

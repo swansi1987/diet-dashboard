@@ -35,9 +35,9 @@ router.post('/', async (req, res) => {
     const result = await pool.query(
       `INSERT INTO food_database (user_id, name, brand_name, base_quantity, unit, calories, protein, carbs, fats, calcium, iron, magnesium, potassium, zinc)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
-      [userId, name, brand_name ?? null, base_quantity ?? 100, unit ?? 'g',
-       calories ?? 0, protein ?? 0, carbs ?? 0, fats ?? 0,
-       calcium ?? 0, iron ?? 0, magnesium ?? 0, potassium ?? 0, zinc ?? 0]
+      [userId, name, brand_name || null, base_quantity || 100, unit || 'g',
+       calories || 0, protein || 0, carbs || 0, fats || 0,
+       calcium || 0, iron || 0, magnesium || 0, potassium || 0, zinc || 0]
     )
     res.status(201).json(result.rows[0])
   } catch (err) {
@@ -113,9 +113,9 @@ router.post('/import-csv', async (req, res) => {
           `UPDATE food_database SET brand_name=$1, base_quantity=$2, unit=$3, calories=$4, protein=$5,
            carbs=$6, fats=$7, calcium=$8, iron=$9, magnesium=$10, potassium=$11, zinc=$12
            WHERE id=$13`,
-          [row.brand_name??null, row.base_quantity??100, row.unit??'g',
-           row.calories??0, row.protein??0, row.carbs??0, row.fats??0,
-           row.calcium??0, row.iron??0, row.magnesium??0, row.potassium??0, row.zinc??0,
+          [row.brand_name || null, row.base_quantity || 100, row.unit || 'g',
+           row.calories || 0, row.protein || 0, row.carbs || 0, row.fats || 0,
+           row.calcium || 0, row.iron || 0, row.magnesium || 0, row.potassium || 0, row.zinc || 0,
            existing.rows[0].id]
         )
         updated++
@@ -123,9 +123,9 @@ router.post('/import-csv', async (req, res) => {
         await pool.query(
           `INSERT INTO food_database (user_id, name, brand_name, base_quantity, unit, calories, protein, carbs, fats, calcium, iron, magnesium, potassium, zinc)
            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)`,
-          [userId, row.name, row.brand_name??null, row.base_quantity??100, row.unit??'g',
-           row.calories??0, row.protein??0, row.carbs??0, row.fats??0,
-           row.calcium??0, row.iron??0, row.magnesium??0, row.potassium??0, row.zinc??0]
+          [userId, row.name, row.brand_name || null, row.base_quantity || 100, row.unit || 'g',
+           row.calories || 0, row.protein || 0, row.carbs || 0, row.fats || 0,
+           row.calcium || 0, row.iron || 0, row.magnesium || 0, row.potassium || 0, row.zinc || 0]
         )
         added++
       }

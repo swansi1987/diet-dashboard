@@ -80,7 +80,7 @@ export default function WeightLogView() {
             <label className="block text-sm text-slate-400 mb-1">Weight (kg)</label>
             <input
               type="number"
-              step="0.1"
+              step="0.01"
               min="1"
               className="input-field w-32"
               value={weight}

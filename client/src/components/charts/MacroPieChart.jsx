@@ -29,8 +29,13 @@ export default function MacroPieChart({ protein, carbs, fats }) {
           ))}
         </Pie>
         <Tooltip
-          contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', color: '#e2e8f0', fontSize: '12px' }}
-          formatter={(v, name) => [`${v}g`, name]}
+          contentStyle={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', color: '#ffffff', fontSize: '12px' }}
+          itemStyle={{ color: '#ffffff' }}
+          formatter={(v, name) => {
+            const total = protein + carbs + fats;
+            const percent = total > 0 ? ((v / total) * 100).toFixed(1) : 0;
+            return [`${v}g (${percent}%)`, name];
+          }}
         />
         <Legend
           iconType="circle"

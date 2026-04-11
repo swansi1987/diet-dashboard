@@ -5,15 +5,27 @@ export default {
   theme: {
     extend: {
       colors: {
+        white: 'var(--text-primary)',
+        slate: {
+          100: 'var(--text-primary)',
+          200: 'var(--text-primary)',
+          300: 'var(--text-secondary)',
+          400: 'var(--text-secondary)',
+          500: 'var(--text-muted)',
+          600: 'var(--text-muted)',
+          700: 'var(--bg-surface-2)',
+          800: 'var(--bg-surface)',
+          900: 'var(--bg-base)',
+        },
         emerald: {
-          400: '#34d399',
-          500: '#10b981',
-          600: '#059669',
+          400: 'var(--brand)',
+          500: 'var(--brand-dark)',
+          600: 'var(--brand-dark)',
         },
         cyan: {
-          400: '#22d3ee',
-          500: '#06b6d4',
-          600: '#0891b2',
+          400: 'var(--brand-2)',
+          500: 'var(--brand-2)',
+          600: 'var(--brand-2)',
         },
       },
       backdropBlur: {

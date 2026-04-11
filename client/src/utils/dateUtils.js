@@ -8,12 +8,16 @@ export function todayISO() {
 }
 
 export function parseDate(dateStr) {
-  // Force UTC to avoid off-by-one from timezone
-  return new Date(dateStr + 'T00:00:00Z')
+  if (!dateStr) return new Date(NaN)
+  // Strip any time portion (handles both "2024-03-28" and "2024-03-28T00:00:00.000Z")
+  const datePart = String(dateStr).split('T')[0]
+  return new Date(datePart + 'T00:00:00Z')
 }
 
 export function formatDate(dateStr, options = {}) {
+  if (!dateStr) return ''
   const d = parseDate(dateStr)
+  if (isNaN(d.getTime())) return ''
   return d.toLocaleDateString('en-US', { timeZone: 'UTC', ...options })
 }
 

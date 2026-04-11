@@ -34,7 +34,21 @@ export function useFoodDatabase(search = '') {
     setFoods(prev => prev.filter(f => f.id !== id))
   }
 
-  const exportCSV = () => window.open('/api/food-database/export-csv', '_blank')
+  const exportCSV = async () => {
+    try {
+      const res = await client.get('/food-database/export-csv', { responseType: 'blob' })
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'text/csv' }))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `food_database_${new Date().toISOString().split('T')[0]}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Export CSV failed:', err)
+    }
+  }
 
   const importCSV = async (rows) => {
     const res = await client.post('/food-database/import-csv', { rows })

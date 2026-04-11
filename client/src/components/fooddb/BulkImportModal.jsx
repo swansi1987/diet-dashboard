@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import Modal from '../ui/Modal.jsx'
 import GradientButton from '../ui/GradientButton.jsx'
-import { Upload } from 'lucide-react'
+import { Upload, CheckCircle } from 'lucide-react'
 
 const EXPECTED_HEADERS = ['name','brand_name','base_quantity','unit','calories','protein','carbs','fats','calcium','iron','magnesium','potassium','zinc']
 
@@ -60,7 +60,7 @@ export default function BulkImportModal({ isOpen, onClose, onImport }) {
       <div className="p-6 space-y-4">
         {result ? (
           <div className="text-center py-6">
-            <div className="text-4xl mb-3">✅</div>
+            <div className="text-emerald-500 mb-3 flex justify-center"><CheckCircle size={40} /></div>
             <p className="text-emerald-400 font-medium">Import complete!</p>
             <p className="text-slate-400 text-sm mt-1">{result.added} added · {result.updated} updated</p>
             <GradientButton className="mt-4" onClick={onClose}>Done</GradientButton>

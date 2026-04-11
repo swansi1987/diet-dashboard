@@ -21,7 +21,12 @@ export default function MealColumn({ mealType, items, onAddFood, onToggleConsume
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-slate-700/50">
         <div className="flex items-center gap-2">
-          <span className="text-base">{MEAL_ICONS[mealType]}</span>
+          <span className="text-base text-slate-400">
+            {(() => {
+              const Icon = MEAL_ICONS[mealType]
+              return <Icon size={16} />
+            })()}
+          </span>
           <span className="text-sm font-semibold text-slate-200">{MEAL_LABELS[mealType]}</span>
           {items.length > 0 && (
             <span className="text-xs text-slate-500">({items.length})</span>
