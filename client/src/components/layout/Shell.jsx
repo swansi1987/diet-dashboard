@@ -12,6 +12,7 @@ import WeightLogView    from '../weight/WeightLogView.jsx'
 import ProfileView      from '../profile/ProfileView.jsx'
 import MealPlannerView  from '../planner/MealPlannerView.jsx'
 import DataManagementView from '../datamanagement/DataManagementView.jsx'
+import WorkoutView      from '../workout/WorkoutView.jsx'
 import SettingsView     from '../settings/SettingsView.jsx'
 
 const VIEWS = {
@@ -23,6 +24,7 @@ const VIEWS = {
   profile:   ProfileView,
   planner:   MealPlannerView,
   data:      DataManagementView,
+  workout:   WorkoutView,
   settings:  SettingsView,
 }
 

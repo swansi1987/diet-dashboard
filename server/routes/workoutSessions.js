@@ -249,20 +249,34 @@ router.put('/:id/sets/:setId', async (req, res, next) => {
     if (!set) return res.status(404).json({ error: 'Set not found' })
 
     const { weight_kg, reps, duration_seconds, distance_meters, rpe, is_warmup, is_dropset, is_failure, notes, set_number } = req.body
+    
+    // Use an object to build the query dynamically or just set explicit values
     const { rows } = await pool.query(
       `UPDATE session_sets
-       SET weight_kg=COALESCE($1,weight_kg),
-           reps=COALESCE($2,reps),
-           duration_seconds=COALESCE($3,duration_seconds),
-           distance_meters=COALESCE($4,distance_meters),
-           rpe=COALESCE($5,rpe),
-           is_warmup=COALESCE($6,is_warmup),
-           is_dropset=COALESCE($7,is_dropset),
-           is_failure=COALESCE($8,is_failure),
-           notes=COALESCE($9,notes),
-           set_number=COALESCE($10,set_number)
-       WHERE id=$11 RETURNING *`,
-      [weight_kg, reps, duration_seconds, distance_meters, rpe, is_warmup, is_dropset, is_failure, notes, set_number, req.params.setId]
+       SET weight_kg = COALESCE($1, weight_kg),
+           reps = COALESCE($2, reps),
+           duration_seconds = COALESCE($3, duration_seconds),
+           distance_meters = COALESCE($4, distance_meters),
+           rpe = COALESCE($5, rpe),
+           is_warmup = COALESCE($6, is_warmup),
+           is_dropset = COALESCE($7, is_dropset),
+           is_failure = COALESCE($8, is_failure),
+           notes = COALESCE($9, notes),
+           set_number = COALESCE($10, set_number)
+       WHERE id = $11 RETURNING *`,
+      [
+        weight_kg === undefined ? null : weight_kg,
+        reps === undefined ? null : reps,
+        duration_seconds === undefined ? null : duration_seconds,
+        distance_meters === undefined ? null : distance_meters,
+        rpe === undefined ? null : rpe,
+        is_warmup,
+        is_dropset,
+        is_failure,
+        notes,
+        set_number,
+        req.params.setId
+      ]
     )
     res.json(rows[0])
   } catch (err) { next(err) }

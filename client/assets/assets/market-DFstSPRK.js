@@ -1,0 +1,1 @@
+function s(){const o=new Date,t=new Date(o.toLocaleString("en-US",{timeZone:"Asia/Kolkata"})),e=t.getDay();if(e===0||e===6)return!1;const n=t.getHours()*60+t.getMinutes();return n>=555&&n<=930}export{s as i};

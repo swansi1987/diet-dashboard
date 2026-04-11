@@ -8,6 +8,8 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const migrations = [
   '001_init.sql',
   '002_workout_coach.sql',
+  '003_oauth.sql',
+  '004_exercise_constraints.sql',
 ]
 
 async function migrate() {

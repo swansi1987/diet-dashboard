@@ -56,7 +56,7 @@ export default function DataManagementView() {
     if (!importData) return
     setImporting(true); setImportError(null)
     try {
-      const res = await client.post('/api/data/import', importData)
+      const res = await client.post('/data/import', importData)
       setImportResult(res.data.message)
       setImportData(null)
     } catch (err) {

@@ -93,10 +93,15 @@ async function autoSeedExercises() {
   try {
     const { default: pool } = await import('./db.js')
     const { rows } = await pool.query('SELECT COUNT(*) AS count FROM exercises WHERE is_global = TRUE')
-    if (parseInt(rows[0].count) > 0) return
+    // We'll check if we have a reasonable amount of exercises. If not, seed.
+    if (parseInt(rows[0].count) > 120) return 
+
     const { EXERCISES } = await import('./data/exercises-seed.js')
+    const { WIKI_EXERCISES } = await import('./data/wiki-exercises.js')
+    
+    const ALL_SEEDS = [...EXERCISES, ...WIKI_EXERCISES]
     let count = 0
-    for (const ex of EXERCISES) {
+    for (const ex of ALL_SEEDS) {
       const result = await pool.query(
         `INSERT INTO exercises (name, muscle_group, secondary_muscles, equipment, category, instructions, tips, gif_url, is_global)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,TRUE)

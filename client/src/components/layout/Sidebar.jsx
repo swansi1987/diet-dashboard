@@ -2,7 +2,7 @@ import { useApp } from '../../context/AppContext.jsx'
 import { useAuth } from '../../context/AuthContext.jsx'
 import {
   LayoutDashboard, BookOpen, Database, BarChart2,
-  Scale, User, Cpu, HardDrive, Settings, LogOut, Activity
+  Scale, User, Cpu, HardDrive, Settings, LogOut, Activity, Dumbbell
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { id: 'profile',   label: 'Profile',       icon: User },
   { id: 'planner',   label: 'Meal Planner',  icon: Cpu },
   { id: 'data',      label: 'Data Mgmt',     icon: HardDrive },
+  { id: 'workout',   label: 'Workout',       icon: Dumbbell },
   { id: 'settings',  label: 'Settings',      icon: Settings },
 ]
 
