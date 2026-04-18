@@ -22,8 +22,9 @@ export default function SettingsScreen() {
     client.get('/settings')
       .then(data => {
         setSettings(data || {})
-        setProvider(data?.ai_provider || 'gemini')
-        setApiKey(data?.ai_api_key || '')
+        setProvider(data?.preferred_ai_provider || 'gemini')
+        // Keys are masked — just show whether one is set, not the value
+        setApiKey('')
       })
       .catch(() => {})
       .finally(() => setLoading(false))
@@ -32,7 +33,9 @@ export default function SettingsScreen() {
   async function save() {
     setSaving(true)
     try {
-      await client.post('/settings', { ai_provider: provider, ai_api_key: apiKey })
+      const payload = { preferred_ai_provider: provider }
+      if (apiKey.trim()) payload[`${provider}_api_key`] = apiKey.trim()
+      await client.put('/settings', payload)
       Alert.alert('Saved', 'Settings updated.')
     } catch (err) {
       Alert.alert('Error', err.message)
@@ -85,12 +88,14 @@ export default function SettingsScreen() {
           ))}
         </View>
 
-        <Text style={styles.label}>API Key</Text>
+        <Text style={styles.label}>
+          API Key{settings[`${provider}_api_key_set`] ? ' ✅ Key set' : ' (not set)'}
+        </Text>
         <TextInput
           style={styles.input}
           value={apiKey}
           onChangeText={setApiKey}
-          placeholder="Paste your API key"
+          placeholder={settings[`${provider}_api_key_set`] ? 'Enter new key to replace…' : 'Paste your API key'}
           placeholderTextColor="#64748b"
           secureTextEntry
           autoCapitalize="none"

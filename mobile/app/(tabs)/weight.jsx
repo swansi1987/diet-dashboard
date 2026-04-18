@@ -19,7 +19,7 @@ export default function WeightScreen() {
 
   const loadLogs = useCallback(() => {
     client.get('/weight-log')
-      .then(data => setLogs(data.entries || []))
+      .then(data => setLogs(Array.isArray(data) ? [...data].reverse() : []))
       .catch(() => setLogs([]))
       .finally(() => setLoading(false))
   }, [])
@@ -31,7 +31,7 @@ export default function WeightScreen() {
     if (!kg || kg <= 0) return Alert.alert('Error', 'Enter a valid weight')
     setSaving(true)
     try {
-      await client.post('/weight-log', { date: today(), weight_kg: kg })
+      await client.post('/weight-log', { date: today(), weight: kg })
       setWeight('')
       loadLogs()
     } catch (err) {
@@ -69,7 +69,7 @@ export default function WeightScreen() {
       {latest && (
         <View style={styles.latestCard}>
           <Text style={styles.latestLabel}>Current</Text>
-          <Text style={styles.latestValue}>{latest.weight_kg} kg</Text>
+          <Text style={styles.latestValue}>{latest.weight} kg</Text>
           <Text style={styles.latestDate}>{latest.date}</Text>
         </View>
       )}
@@ -103,7 +103,7 @@ export default function WeightScreen() {
                 onLongPress={() => deleteLog(entry.id)}
               >
                 <Text style={styles.logDate}>{entry.date}</Text>
-                <Text style={styles.logWeight}>{entry.weight_kg} kg</Text>
+                <Text style={styles.logWeight}>{entry.weight} kg</Text>
               </TouchableOpacity>
             ))}
             {logs.length === 0 && (

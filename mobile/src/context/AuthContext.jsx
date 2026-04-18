@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { API_BASE_URL } from '../constants'
 import client, {
   setAccessToken,
   clearAccessToken,
@@ -21,7 +22,7 @@ export function AuthProvider({ children }) {
         if (!refreshToken) return
 
         const { accessToken } = await fetch(
-          `${require('../constants').API_BASE_URL}/api/auth/refresh`,
+          `${API_BASE_URL}/api/auth/refresh`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
