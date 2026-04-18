@@ -26,7 +26,14 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-asset"
+      "expo-asset",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow NutriFlex to access your photos for meal logging.",
+          "cameraPermission": "Allow NutriFlex to use your camera for meal photo logging."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
