@@ -12,16 +12,39 @@ router.get('/', async (req, res) => {
   const { search } = req.query
   const userId = req.user.userId
   try {
-    let query = 'SELECT * FROM food_database WHERE (user_id = $1 OR is_global = TRUE)'
-    const params = [userId]
+    let query, params
+
     if (search) {
-      query += ' AND (LOWER(name) LIKE $2 OR LOWER(brand_name) LIKE $2)'
-      params.push(`%${search.toLowerCase()}%`)
+      const term = search.toLowerCase()
+      // $1 = userId, $2 = '%term%' (substring), $3 = term (fuzzy similarity)
+      // Matches if: substring found anywhere in name/brand OR word_similarity > 0.25
+      // Results ordered by best fuzzy match first, then global, then alphabetical
+      query = `
+        SELECT *, GREATEST(
+          word_similarity($3, LOWER(name)),
+          word_similarity($3, LOWER(COALESCE(brand_name, '')))
+        ) AS _relevance
+        FROM food_database
+        WHERE (user_id = $1 OR is_global = TRUE)
+          AND (
+            LOWER(name)                          LIKE $2
+            OR LOWER(COALESCE(brand_name, ''))   LIKE $2
+            OR word_similarity($3, LOWER(name))                        > 0.25
+            OR word_similarity($3, LOWER(COALESCE(brand_name, '')))    > 0.25
+          )
+        ORDER BY _relevance DESC, is_global DESC, name ASC
+      `
+      params = [userId, `%${term}%`, term]
+    } else {
+      query  = 'SELECT * FROM food_database WHERE (user_id = $1 OR is_global = TRUE) ORDER BY is_global DESC, name ASC'
+      params = [userId]
     }
-    query += ' ORDER BY is_global DESC, name ASC'
+
     const result = await pool.query(query, params)
-    res.json(result.rows)
+    // Strip internal _relevance column before sending to client
+    res.json(result.rows.map(({ _relevance, ...rest }) => rest))
   } catch (err) {
+    console.error(err)
     res.status(500).json({ error: 'Failed to fetch food database' })
   }
 })
