@@ -5,20 +5,20 @@ import { verifyJWT } from '../middleware/auth.js'
 const router = Router()
 router.use(verifyJWT)
 
-const FIELDS = ['name','brand_name','base_quantity','unit','calories','protein','carbs','fats','calcium','iron','magnesium','potassium','zinc']
+const FIELDS = ['name','brand_name','base_quantity','unit','calories','protein','carbs','fats','calcium','iron','magnesium','potassium','zinc','is_global']
 
 // GET /api/food-database
 router.get('/', async (req, res) => {
   const { search } = req.query
   const userId = req.user.userId
   try {
-    let query = 'SELECT * FROM food_database WHERE user_id = $1'
+    let query = 'SELECT * FROM food_database WHERE (user_id = $1 OR is_global = TRUE)'
     const params = [userId]
     if (search) {
       query += ' AND (LOWER(name) LIKE $2 OR LOWER(brand_name) LIKE $2)'
       params.push(`%${search.toLowerCase()}%`)
     }
-    query += ' ORDER BY name ASC'
+    query += ' ORDER BY is_global DESC, name ASC'
     const result = await pool.query(query, params)
     res.json(result.rows)
   } catch (err) {
@@ -29,15 +29,16 @@ router.get('/', async (req, res) => {
 // POST /api/food-database
 router.post('/', async (req, res) => {
   const userId = req.user.userId
-  const { name, brand_name, base_quantity, unit, calories, protein, carbs, fats, calcium, iron, magnesium, potassium, zinc } = req.body
+  const { name, brand_name, base_quantity, unit, calories, protein, carbs, fats, calcium, iron, magnesium, potassium, zinc, is_global } = req.body
   if (!name) return res.status(400).json({ error: 'Food name is required' })
   try {
     const result = await pool.query(
-      `INSERT INTO food_database (user_id, name, brand_name, base_quantity, unit, calories, protein, carbs, fats, calcium, iron, magnesium, potassium, zinc)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
+      `INSERT INTO food_database (user_id, name, brand_name, base_quantity, unit, calories, protein, carbs, fats, calcium, iron, magnesium, potassium, zinc, is_global)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
       [userId, name, brand_name || null, base_quantity || 100, unit || 'g',
        calories || 0, protein || 0, carbs || 0, fats || 0,
-       calcium || 0, iron || 0, magnesium || 0, potassium || 0, zinc || 0]
+       calcium || 0, iron || 0, magnesium || 0, potassium || 0, zinc || 0,
+       is_global === true]
     )
     res.status(201).json(result.rows[0])
   } catch (err) {

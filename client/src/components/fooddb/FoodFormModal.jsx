@@ -18,7 +18,7 @@ const FIELDS = [
   { key: 'zinc', label: 'Zinc (mg)', type: 'number', col: 1 },
 ]
 
-const empty = { name: '', brand_name: '', base_quantity: 100, unit: 'g', calories: 0, protein: 0, carbs: 0, fats: 0, calcium: 0, iron: 0, magnesium: 0, potassium: 0, zinc: 0 }
+const empty = { name: '', brand_name: '', base_quantity: 100, unit: 'g', calories: 0, protein: 0, carbs: 0, fats: 0, calcium: 0, iron: 0, magnesium: 0, potassium: 0, zinc: 0, is_global: false }
 
 export default function FoodFormModal({ isOpen, onClose, onSave, editFood = null }) {
   const [form, setForm] = useState(empty)
@@ -59,7 +59,21 @@ export default function FoodFormModal({ isOpen, onClose, onSave, editFood = null
             </div>
           ))}
         </div>
-        <div className="flex justify-end gap-3 mt-6">
+        <div className="mt-4 pt-4 border-t border-slate-700">
+          <label className="flex items-center gap-2.5 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={form.is_global || false}
+              onChange={e => setForm(p => ({ ...p, is_global: e.target.checked }))}
+              className="w-4 h-4 rounded accent-emerald-500 cursor-pointer"
+            />
+            <span className="text-sm text-slate-300">
+              Share with all users
+              <span className="ml-1.5 text-xs text-slate-500">(visible to everyone in the app)</span>
+            </span>
+          </label>
+        </div>
+        <div className="flex justify-end gap-3 mt-4">
           <GradientButton variant="ghost" onClick={onClose} type="button">Cancel</GradientButton>
           <GradientButton type="submit" disabled={saving}>{saving ? 'Saving...' : 'Save'}</GradientButton>
         </div>

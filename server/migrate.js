@@ -10,6 +10,7 @@ const migrations = [
   '002_workout_coach.sql',
   '003_oauth.sql',
   '004_exercise_constraints.sql',
+  '005_global_food.sql',
 ]
 
 async function migrate() {

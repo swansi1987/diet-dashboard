@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useFoodDatabase } from '../../hooks/useFoodDatabase.js'
+import { useAuth } from '../../context/AuthContext.jsx'
 import GlassCard from '../ui/GlassCard.jsx'
 import GradientButton from '../ui/GradientButton.jsx'
 import LoadingSpinner from '../ui/LoadingSpinner.jsx'
@@ -9,13 +10,27 @@ import AIEnrichModal from './AIEnrichModal.jsx'
 import ConfirmDialog from '../ui/ConfirmDialog.jsx'
 import { Plus, Search, Pencil, Trash2, Download, Upload, Sparkles } from 'lucide-react'
 
+const FILTERS = [
+  { key: 'all',    label: 'All Foods' },
+  { key: 'global', label: 'Global' },
+  { key: 'mine',   label: 'My Foods' },
+]
+
 export default function FoodDatabaseView() {
   const [search, setSearch] = useState('')
+  const [filter, setFilter] = useState('all')
+  const { user } = useAuth()
   const { foods, loading, addFood, updateFood, deleteFood, exportCSV, importCSV } = useFoodDatabase(search)
   const [formModal, setFormModal] = useState({ open: false, food: null })
   const [importModal, setImportModal] = useState(false)
   const [enrichModal, setEnrichModal] = useState(false)
   const [deleteConfirm, setDeleteConfirm] = useState({ open: false, id: null })
+
+  const visibleFoods = foods.filter(f => {
+    if (filter === 'mine')   return f.user_id === user?.id
+    if (filter === 'global') return f.is_global
+    return true
+  })
 
   const handleSave = async (data) => {
     if (formModal.food) {
@@ -45,15 +60,30 @@ export default function FoodDatabaseView() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-        <input
-          className="input-field pl-10"
-          placeholder="Search food database..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+      {/* Search + Filter */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative flex-1 min-w-48">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <input
+            className="input-field pl-10"
+            placeholder="Search food database..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <div className="flex gap-1.5">
+          {FILTERS.map(f => (
+            <button
+              key={f.key}
+              onClick={() => setFilter(f.key)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors border
+                ${filter === f.key
+                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40'
+                  : 'text-slate-500 border-slate-700 hover:border-slate-600 hover:text-slate-400'}`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Table */}
@@ -62,7 +92,7 @@ export default function FoodDatabaseView() {
           <div className="flex justify-center items-center h-40">
             <LoadingSpinner />
           </div>
-        ) : foods.length === 0 ? (
+        ) : visibleFoods.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-40 text-slate-500">
             <p>No foods found.</p>
             <button onClick={() => setFormModal({ open: true, food: null })} className="text-emerald-400 text-sm mt-2 hover:text-emerald-300">
@@ -84,29 +114,41 @@ export default function FoodDatabaseView() {
                 </tr>
               </thead>
               <tbody>
-                {foods.map(f => (
-                  <tr key={f.id} className="border-b border-slate-800 hover:bg-slate-700/20 transition-colors">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-slate-200">{f.name}</div>
-                      {f.brand_name && <div className="text-xs text-slate-500">{f.brand_name}</div>}
-                    </td>
-                    <td className="text-right px-3 py-3 text-slate-400">{f.base_quantity}{f.unit}</td>
-                    <td className="text-right px-3 py-3 text-emerald-400 font-medium">{f.calories}</td>
-                    <td className="text-right px-3 py-3 text-slate-300">{f.protein}</td>
-                    <td className="text-right px-3 py-3 text-slate-300">{f.carbs}</td>
-                    <td className="text-right px-3 py-3 text-slate-300">{f.fats}</td>
-                    <td className="px-3 py-3">
-                      <div className="flex items-center gap-1">
-                        <button onClick={() => setFormModal({ open: true, food: f })} className="p-1.5 text-slate-500 hover:text-emerald-400 transition-colors">
-                          <Pencil className="w-3.5 h-3.5" />
-                        </button>
-                        <button onClick={() => setDeleteConfirm({ open: true, id: f.id })} className="p-1.5 text-slate-500 hover:text-red-400 transition-colors">
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {visibleFoods.map(f => {
+                  const canEdit = f.user_id === user?.id
+                  return (
+                    <tr key={f.id} className="border-b border-slate-800 hover:bg-slate-700/20 transition-colors">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-slate-200">{f.name}</span>
+                          {f.is_global && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 leading-none">
+                              Global
+                            </span>
+                          )}
+                        </div>
+                        {f.brand_name && <div className="text-xs text-slate-500 mt-0.5">{f.brand_name}</div>}
+                      </td>
+                      <td className="text-right px-3 py-3 text-slate-400">{f.base_quantity}{f.unit}</td>
+                      <td className="text-right px-3 py-3 text-emerald-400 font-medium">{f.calories}</td>
+                      <td className="text-right px-3 py-3 text-slate-300">{f.protein}</td>
+                      <td className="text-right px-3 py-3 text-slate-300">{f.carbs}</td>
+                      <td className="text-right px-3 py-3 text-slate-300">{f.fats}</td>
+                      <td className="px-3 py-3">
+                        {canEdit && (
+                          <div className="flex items-center gap-1">
+                            <button onClick={() => setFormModal({ open: true, food: f })} className="p-1.5 text-slate-500 hover:text-emerald-400 transition-colors">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button onClick={() => setDeleteConfirm({ open: true, id: f.id })} className="p-1.5 text-slate-500 hover:text-red-400 transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
