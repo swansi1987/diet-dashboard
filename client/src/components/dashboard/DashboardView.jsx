@@ -18,7 +18,7 @@ import { Flag, Camera, Zap, Beef, Wheat, Droplets, UtensilsCrossed } from 'lucid
 const CALORIE_GOAL = 2000
 
 export default function DashboardView() {
-  const { selectedDate } = useApp()
+  const { selectedDate, setActiveView } = useApp()
   const { logs, loading } = useDailyLog(selectedDate)
   const { entries: weightEntries, latestWeight } = useWeightLog(30)
   const { profile } = useProfile()
@@ -77,6 +77,7 @@ export default function DashboardView() {
       icon: UtensilsCrossed,
       color: 'var(--brand-2)',
       sub: `${logs.filter(l => l.consumed).length} consumed`,
+      onClick: () => setActiveView('logger'),
     },
   ]
 
@@ -92,8 +93,12 @@ export default function DashboardView() {
 
       {/* Stat strip */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        {STAT_CARDS.map(({ label, value, unit, icon: Icon, color, sub, progress }) => (
-          <GlassCard key={label} className="p-4">
+        {STAT_CARDS.map(({ label, value, unit, icon: Icon, color, sub, progress, onClick }) => (
+          <GlassCard
+            key={label}
+            className={`p-4 ${onClick ? 'cursor-pointer hover:ring-1 hover:ring-[var(--brand)] transition-all' : ''}`}
+            onClick={onClick}
+          >
             <div className="flex items-start justify-between mb-2">
               <span className="section-title">{label}</span>
               <div
@@ -175,14 +180,29 @@ export default function DashboardView() {
       {/* Today's meals */}
       {logs.length > 0 && (
         <GlassCard className="p-5">
-          <p className="section-title mb-4">Today's Meals</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="section-title">Today's Meals</p>
+            <button
+              onClick={() => setActiveView('logger')}
+              className="text-xs font-medium transition-colors"
+              style={{ color: 'var(--brand)' }}
+            >
+              Open Logger →
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
             {MEAL_TYPES.map(type => {
               const items = logs.filter(l => l.meal_type === type)
               if (!items.length) return null
               const mealCal = items.filter(i => i.consumed).reduce((s, l) => s + (+l.calories || 0), 0)
               return (
-                <div key={type} className="rounded-xl p-4" style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border)' }}>
+                <div
+                  key={type}
+                  className="rounded-xl p-4 cursor-pointer transition-all hover:ring-1 hover:ring-[var(--brand)]"
+                  style={{ background: 'var(--bg-surface-2)', border: '1px solid var(--border)' }}
+                  onClick={() => setActiveView('logger')}
+                  title="Open Daily Logger"
+                >
                   <div className="flex items-center justify-between mb-3">
                     <span className="flex items-center gap-1.5" style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>
                       {(() => {

@@ -57,9 +57,9 @@ router.post('/login', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM users WHERE email = $1', [email.toLowerCase()])
     const user = result.rows[0]
-    if (!user) return res.status(401).json({ error: 'Invalid credentials' })
+    if (!user) return res.status(401).json({ error: 'No account found with this email address. Please check your email or create a new account.' })
     const valid = await bcrypt.compare(password, user.password_hash)
-    if (!valid) return res.status(401).json({ error: 'Invalid credentials' })
+    if (!valid) return res.status(401).json({ error: 'Incorrect password. Please try again or reset your password.' })
     const { accessToken, refreshToken } = issueTokens(user.id)
     await pool.query(
       'INSERT INTO user_settings (user_id, key, value) VALUES ($1, $2, $3) ON CONFLICT (user_id, key) DO UPDATE SET value = $3',
