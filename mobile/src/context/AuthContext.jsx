@@ -18,24 +18,39 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     async function restoreSession() {
       try {
-        const refreshToken = await getStoredRefreshToken()
-        if (!refreshToken) return
+        let refreshToken = null
+        try {
+          refreshToken = await getStoredRefreshToken()
+        } catch (e) {
+          console.warn('SecureStore unavailable:', e?.message)
+          setLoading(false)
+          return
+        }
+        if (!refreshToken) {
+          setLoading(false)
+          return
+        }
 
-        const { accessToken } = await fetch(
+        const res = await fetch(
           `${API_BASE_URL}/api/auth/refresh`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken }),
           }
-        ).then(r => r.json())
+        )
+        const { accessToken } = await res.json().catch(() => ({}))
 
-        if (!accessToken) return
+        if (!accessToken) {
+          setLoading(false)
+          return
+        }
         setAccessToken(accessToken)
         const { user } = await client.get('/auth/me')
         setUser(user)
-      } catch {
-        await removeRefreshToken()
+      } catch (e) {
+        console.warn('restoreSession failed:', e?.message)
+        try { await removeRefreshToken() } catch {}
         clearAccessToken()
       } finally {
         setLoading(false)
