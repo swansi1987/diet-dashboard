@@ -2,21 +2,26 @@ import { useState, useEffect } from 'react'
 import Modal from '../ui/Modal.jsx'
 import GradientButton from '../ui/GradientButton.jsx'
 import { useFoodDatabase } from '../../hooks/useFoodDatabase.js'
+import { useFuseSearch } from '../../hooks/useFuseSearch.js'
 import { scaleNutrition } from '../../utils/nutritionCalc.js'
 import { MEAL_TYPES, MEAL_LABELS } from '../../utils/constants.js'
 import { Search } from 'lucide-react'
 
 export default function AddFoodModal({ isOpen, onClose, onAdd, defaultMealType = 'breakfast' }) {
-  const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [quantity, setQuantity] = useState(100)
   const [mealType, setMealType] = useState(defaultMealType)
-  const { foods } = useFoodDatabase(search)
+
+  // Load full food list once — no API calls during search
+  const { foods, loading: foodsLoading } = useFoodDatabase('')
+
+  // Client-side fuzzy search via Fuse.js — instant, typo-tolerant, mid-string matching
+  const { query, results, search } = useFuseSearch(foods)
 
   useEffect(() => {
-    if (!isOpen) { setSearch(''); setSelected(null); setQuantity(100) }
+    if (!isOpen) { search(''); setSelected(null); setQuantity(100) }
     setMealType(defaultMealType)
-  }, [isOpen, defaultMealType])
+  }, [isOpen, defaultMealType]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const scaled = selected ? scaleNutrition(selected, quantity) : null
 
@@ -56,15 +61,15 @@ export default function AddFoodModal({ isOpen, onClose, onAdd, defaultMealType =
           <input
             className="input-field pl-10"
             placeholder="Search food database..."
-            value={search}
-            onChange={e => { setSearch(e.target.value); setSelected(null) }}
+            value={query}
+            onChange={e => { search(e.target.value); setSelected(null) }}
           />
         </div>
 
-        {/* Food list */}
-        {!selected && search && foods.length > 0 && (
+        {/* Food list — Fuse.js results, instant & typo-tolerant */}
+        {!selected && query.length >= 2 && results.length > 0 && (
           <div className="max-h-48 overflow-y-auto space-y-1">
-            {foods.map(f => (
+            {results.map(f => (
               <button
                 key={f.id}
                 onClick={() => setSelected(f)}
@@ -78,6 +83,13 @@ export default function AddFoodModal({ isOpen, onClose, onAdd, defaultMealType =
               </button>
             ))}
           </div>
+        )}
+
+        {/* Empty state — shown only after 2+ chars with no matches */}
+        {!selected && query.length >= 2 && results.length === 0 && !foodsLoading && (
+          <p className="text-center text-slate-500 text-sm py-3">
+            No foods found for &ldquo;{query}&rdquo;
+          </p>
         )}
 
         {/* Selected food + quantity */}

@@ -1,21 +1,27 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import client from '../api/client.js'
 
 export function useFoodDatabase(search = '') {
   const [foods, setFoods] = useState([])
   const [loading, setLoading] = useState(false)
+  const timerRef = useRef(null)
 
-  const fetchFoods = useCallback(async () => {
+  const fetchFoods = useCallback(async (term) => {
     setLoading(true)
     try {
-      const res = await client.get('/food-database', { params: search ? { search } : {} })
+      const res = await client.get('/food-database', { params: term ? { search: term } : {} })
       setFoods(res.data)
     } finally {
       setLoading(false)
     }
-  }, [search])
+  }, [])
 
-  useEffect(() => { fetchFoods() }, [fetchFoods])
+  // Debounce backend calls — 350 ms prevents hammering the API on every keystroke
+  useEffect(() => {
+    clearTimeout(timerRef.current)
+    timerRef.current = setTimeout(() => fetchFoods(search), 350)
+    return () => clearTimeout(timerRef.current)
+  }, [search, fetchFoods])
 
   const addFood = async (data) => {
     const res = await client.post('/food-database', data)
