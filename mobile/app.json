@@ -21,7 +21,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#0f172a"
       },
-      "package": "com.dietdashboard.app"
+      "package": "com.dietdashboard.app",
+      "newArchEnabled": false
     },
     "plugins": [
       "expo-router",
