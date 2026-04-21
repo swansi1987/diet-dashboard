@@ -9,7 +9,7 @@ import { Search } from 'lucide-react'
 
 export default function AddFoodModal({ isOpen, onClose, onAdd, defaultMealType = 'breakfast' }) {
   const [selected, setSelected] = useState(null)
-  const [quantity, setQuantity] = useState(100)
+  const [quantity, setQuantity] = useState('100')
   const [mealType, setMealType] = useState(defaultMealType)
 
   // Load full food list once — no API calls during search
@@ -19,21 +19,22 @@ export default function AddFoodModal({ isOpen, onClose, onAdd, defaultMealType =
   const { query, results, search } = useFuseSearch(foods)
 
   useEffect(() => {
-    if (!isOpen) { search(''); setSelected(null); setQuantity(100) }
+    if (!isOpen) { search(''); setSelected(null); setQuantity('100') }
     setMealType(defaultMealType)
   }, [isOpen, defaultMealType]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const scaled = selected ? scaleNutrition(selected, quantity) : null
+  const scaled = selected ? scaleNutrition(selected, parseFloat(quantity) || 0) : null
 
   const handleAdd = () => {
     if (!selected) return
+    const qty = parseFloat(quantity) || 100
     onAdd({
       food_id: selected.id,
       food_name: selected.name,
       brand_name: selected.brand_name,
       meal_type: mealType,
-      quantity,
-      ...scaled,
+      quantity: qty,
+      ...scaleNutrition(selected, qty),
       consumed: true,
       is_junk_meal: false,
     })
@@ -111,7 +112,7 @@ export default function AddFoodModal({ isOpen, onClose, onAdd, defaultMealType =
                 step="1"
                 className="input-field w-28"
                 value={quantity}
-                onChange={e => setQuantity(parseFloat(e.target.value) || 0)}
+                onChange={e => setQuantity(e.target.value)}
               />
             </div>
 

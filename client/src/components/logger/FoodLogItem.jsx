@@ -10,7 +10,7 @@ export default function FoodLogItem({ item, onToggleConsumed, onEdit, onCopy, on
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const [menuPos, setMenuPos] = useState(null)
   const [editModal, setEditModal] = useState(false)
-  const [newQty, setNewQty] = useState(item.quantity || 0)
+  const [newQty, setNewQty] = useState(String(item.quantity || ''))
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -94,7 +94,7 @@ export default function FoodLogItem({ item, onToggleConsumed, onEdit, onCopy, on
           x={menuPos.x}
           y={menuPos.y}
           onClose={() => setMenuPos(null)}
-          onEdit={() => { setNewQty(item.quantity); setEditModal(true) }}
+          onEdit={() => { setNewQty(String(item.quantity)); setEditModal(true) }}
           onCopy={() => onCopy?.(item)}
           onDelete={() => onDelete(item.id)}
         />
@@ -111,12 +111,12 @@ export default function FoodLogItem({ item, onToggleConsumed, onEdit, onCopy, on
               step="1"
               className="input-field"
               value={newQty}
-              onChange={e => setNewQty(parseFloat(e.target.value) || 0)}
+              onChange={e => setNewQty(e.target.value)}
             />
           </div>
           <div className="flex justify-end gap-3">
             <GradientButton variant="ghost" onClick={() => setEditModal(false)}>Cancel</GradientButton>
-            <GradientButton onClick={() => { onEdit(item.id, newQty); setEditModal(false) }}>Update</GradientButton>
+            <GradientButton onClick={() => { onEdit(item.id, parseFloat(newQty) || item.quantity); setEditModal(false) }}>Update</GradientButton>
           </div>
         </div>
       </Modal>
