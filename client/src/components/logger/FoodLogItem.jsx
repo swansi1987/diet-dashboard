@@ -112,6 +112,12 @@ export default function FoodLogItem({ item, onToggleConsumed, onEdit, onCopy, on
               className="input-field"
               value={newQty}
               onChange={e => setNewQty(e.target.value)}
+              onKeyDown={e => {
+                if (e.key === 'Enter') {
+                  onEdit(item.id, parseFloat(newQty) || item.quantity)
+                  setEditModal(false)
+                }
+              }}
             />
           </div>
           <div className="flex justify-end gap-3">

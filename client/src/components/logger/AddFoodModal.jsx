@@ -113,6 +113,7 @@ export default function AddFoodModal({ isOpen, onClose, onAdd, defaultMealType =
                 className="input-field w-28"
                 value={quantity}
                 onChange={e => setQuantity(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAdd()}
               />
             </div>
 
