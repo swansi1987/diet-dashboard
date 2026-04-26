@@ -10,7 +10,7 @@ export default function FoodLogItem({ item, onToggleConsumed, onEdit, onCopy, on
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: item.id })
   const [menuPos, setMenuPos] = useState(null)
   const [editModal, setEditModal] = useState(false)
-  const [newQty, setNewQty] = useState(String(item.quantity || ''))
+  const [newQty, setNewQty] = useState('')
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -94,7 +94,7 @@ export default function FoodLogItem({ item, onToggleConsumed, onEdit, onCopy, on
           x={menuPos.x}
           y={menuPos.y}
           onClose={() => setMenuPos(null)}
-          onEdit={() => { setNewQty(String(item.quantity)); setEditModal(true) }}
+          onEdit={() => { setNewQty(''); setEditModal(true) }}
           onCopy={() => onCopy?.(item)}
           onDelete={() => onDelete(item.id)}
         />

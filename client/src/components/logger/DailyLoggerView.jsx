@@ -72,19 +72,39 @@ export default function DailyLoggerView() {
 
   const handleEditQuantity = async (id, newQty) => {
     const item = logs.find(l => l.id === id)
-    if (!item || !item.food_id) {
-      await updateLog(id, { quantity: newQty })
-      return
+    if (!item) return
+
+    let scaled = null
+
+    // 1. Try to fetch original food if ID exists
+    if (item.food_id) {
+      try {
+        const res = await apiClient.get(`/food-database/${item.food_id}`)
+        if (res.data) {
+          scaled = scaleNutrition(res.data, newQty)
+        }
+      } catch (err) {
+        console.warn('Failed to fetch food by ID, falling back to ratio scaling', err)
+      }
     }
-    // Recalculate nutrition from original food
-    const foodRes = await apiClient.get(`/food-database?search=${encodeURIComponent(item.food_name)}`)
-    const food = foodRes.data.find(f => f.id === item.food_id)
-    if (food) {
-      const scaled = scaleNutrition(food, newQty)
-      await updateLog(id, { quantity: newQty, ...scaled })
-    } else {
-      await updateLog(id, { quantity: newQty })
+
+    // 2. Fallback to ratio scaling if we couldn't get original food data
+    if (!scaled && item.quantity > 0) {
+      const ratio = newQty / item.quantity
+      scaled = {
+        calories: Math.round((item.calories || 0) * ratio * 10) / 10,
+        protein: Math.round((item.protein || 0) * ratio * 10) / 10,
+        carbs: Math.round((item.carbs || 0) * ratio * 10) / 10,
+        fats: Math.round((item.fats || 0) * ratio * 10) / 10,
+        calcium: Math.round((item.calcium || 0) * ratio * 10) / 10,
+        iron: Math.round((item.iron || 0) * ratio * 10) / 10,
+        magnesium: Math.round((item.magnesium || 0) * ratio * 10) / 10,
+        potassium: Math.round((item.potassium || 0) * ratio * 10) / 10,
+        zinc: Math.round((item.zinc || 0) * ratio * 10) / 10,
+      }
     }
+
+    await updateLog(id, { quantity: newQty, ...scaled })
   }
 
   const handleCopyItem = (item) => {

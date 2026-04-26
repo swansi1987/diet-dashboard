@@ -9,7 +9,7 @@ import { Search } from 'lucide-react'
 
 export default function AddFoodModal({ isOpen, onClose, onAdd, defaultMealType = 'breakfast' }) {
   const [selected, setSelected] = useState(null)
-  const [quantity, setQuantity] = useState('100')
+  const [quantity, setQuantity] = useState('')
   const [mealType, setMealType] = useState(defaultMealType)
 
   // Load full food list once — no API calls during search
@@ -19,7 +19,7 @@ export default function AddFoodModal({ isOpen, onClose, onAdd, defaultMealType =
   const { query, results, search } = useFuseSearch(foods)
 
   useEffect(() => {
-    if (!isOpen) { search(''); setSelected(null); setQuantity('100') }
+    if (!isOpen) { search(''); setSelected(null); setQuantity('') }
     setMealType(defaultMealType)
   }, [isOpen, defaultMealType]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -27,7 +27,7 @@ export default function AddFoodModal({ isOpen, onClose, onAdd, defaultMealType =
 
   const handleAdd = () => {
     if (!selected) return
-    const qty = parseFloat(quantity) || 100
+    const qty = parseFloat(quantity) || selected.base_quantity || 100
     onAdd({
       food_id: selected.id,
       food_name: selected.name,

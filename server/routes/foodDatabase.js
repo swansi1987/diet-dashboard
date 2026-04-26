@@ -49,6 +49,23 @@ router.get('/', async (req, res) => {
   }
 })
 
+// GET /api/food-database/:id
+router.get('/:id', async (req, res) => {
+  const userId = req.user.userId
+  const { id } = req.params
+  try {
+    const result = await pool.query(
+      'SELECT * FROM food_database WHERE id = $1 AND (user_id = $2 OR is_global = TRUE)',
+      [id, userId]
+    )
+    if (result.rows.length === 0) return res.status(404).json({ error: 'Food item not found' })
+    res.json(result.rows[0])
+  } catch (err) {
+    console.error(err)
+    res.status(500).json({ error: 'Failed to fetch food item' })
+  }
+})
+
 // POST /api/food-database
 router.post('/', async (req, res) => {
   const userId = req.user.userId
