@@ -11,7 +11,7 @@ router.get('/export', async (req, res) => {
   try {
     const [logs, foods, weights, profile, cheatDays] = await Promise.all([
       pool.query('SELECT * FROM daily_logs WHERE user_id = $1 ORDER BY date', [userId]),
-      pool.query('SELECT * FROM food_database WHERE user_id = $1 ORDER BY name', [userId]),
+      pool.query('SELECT * FROM food_database WHERE user_id = $1 OR is_global = TRUE ORDER BY name', [userId]),
       pool.query('SELECT * FROM weight_log WHERE user_id = $1 ORDER BY date', [userId]),
       pool.query('SELECT * FROM profiles WHERE user_id = $1', [userId]),
       pool.query('SELECT * FROM cheat_days WHERE user_id = $1', [userId]),
